@@ -7,6 +7,7 @@
 #include <Protocol/DiskIo2.h>
 #include <Protocol/BlockIo.h>
 
+// #@@range_begin(struct_memory_map)
 struct MemoryMap
 {
     UINTN buffer_size;
@@ -16,13 +17,16 @@ struct MemoryMap
     UINTN descriptor_size;
     UINT32 descriptor_version;
 };
+// #@@range_end(struct_memory_map)
 
+// #@@range_begin(get_memory_map)
 EFI_STATUS GetMemoryMap(struct MemoryMap *map)
 {
     if (map->buffer == NULL)
     {
         return EFI_BUFFER_TOO_SMALL;
     }
+
     map->map_size = map->buffer_size;
     return gBS->GetMemoryMap(
         &map->map_size,
@@ -31,7 +35,9 @@ EFI_STATUS GetMemoryMap(struct MemoryMap *map)
         &map->descriptor_size,
         &map->descriptor_version);
 }
+// #@@range_end(get_memory_map)
 
+// #@@range_begin(get_memory_type)
 const CHAR16 *GetMemoryTypeUnicode(EFI_MEMORY_TYPE type)
 {
     switch (type)
@@ -72,17 +78,21 @@ const CHAR16 *GetMemoryTypeUnicode(EFI_MEMORY_TYPE type)
         return L"InvalidMemoryType";
     }
 }
+// #@@range_end(get_memory_type)
 
+// #@@range_begin(save_memory_map)
 EFI_STATUS SaveMemoryMap(struct MemoryMap *map, EFI_FILE_PROTOCOL *file)
 {
     CHAR8 buf[256];
     UINTN len;
+
     CHAR8 *header = "Index, Type, Type(name), PhysicalStart, NumberOfPages, Attribute\n";
     len = AsciiStrLen(header);
     file->Write(file, &len, header);
 
-    Print(L"map->buffer=%08lx, map->map_size=%08lx\n",
+    Print(L"map->buffer = %08lx, map->map_size = %08lx\n",
           map->buffer, map->map_size);
+
     EFI_PHYSICAL_ADDRESS iter;
     int i;
     for (iter = (EFI_PHYSICAL_ADDRESS)map->buffer, i = 0;
@@ -93,11 +103,17 @@ EFI_STATUS SaveMemoryMap(struct MemoryMap *map, EFI_FILE_PROTOCOL *file)
         len = AsciiSPrint(
             buf, sizeof(buf),
             "%u, %x, %-ls, %08lx, %lx, %lx\n",
-            i, desc->Type, GetMemoryTypeUnicode(desc->Type), desc->PhysicalStart, desc->NumberOfPages, desc->Attribute & 0xffffflu);
+            i,
+            desc->Type,
+            GetMemoryTypeUnicode(desc->Type),
+            desc->PhysicalStart, desc->NumberOfPages,
+            desc->Attribute & 0xffffflu);
         file->Write(file, &len, buf);
     }
+
     return EFI_SUCCESS;
 }
+// #@@range_end(save_memory_map)
 
 EFI_STATUS OpenRootDir(EFI_HANDLE image_handle, EFI_FILE_PROTOCOL **root)
 {
@@ -106,7 +122,7 @@ EFI_STATUS OpenRootDir(EFI_HANDLE image_handle, EFI_FILE_PROTOCOL **root)
 
     gBS->OpenProtocol(
         image_handle,
-        &gEfiSimpleFileSystemProtocolGuid,
+        &gEfiLoadedImageProtocolGuid,
         (VOID **)&loaded_image,
         image_handle,
         NULL,
@@ -121,6 +137,7 @@ EFI_STATUS OpenRootDir(EFI_HANDLE image_handle, EFI_FILE_PROTOCOL **root)
         EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL);
 
     fs->OpenVolume(fs, root);
+
     return EFI_SUCCESS;
 }
 
@@ -130,6 +147,7 @@ EFI_STATUS EFIAPI UefiMain(
 {
     Print(L"Hello, Mikan World!!\n");
 
+    // #@@range_begin(main)
     CHAR8 memmap_buf[4096 * 4];
     struct MemoryMap memmap = {sizeof(memmap_buf), memmap_buf, 0, 0, 0, 0};
     GetMemoryMap(&memmap);
@@ -144,6 +162,7 @@ EFI_STATUS EFIAPI UefiMain(
 
     SaveMemoryMap(&memmap, memmap_file);
     memmap_file->Close(memmap_file);
+    // #@@range_end(main)
 
     Print(L"All done\n");
 
