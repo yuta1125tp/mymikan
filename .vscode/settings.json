@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "uefilib.h": "c",
+        "uefi.h": "c",
+        "uefibasetype.h": "c",
+        "base.h": "c",
+        "processorbind.h": "c"
+    }
+}
