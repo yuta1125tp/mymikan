@@ -4,6 +4,8 @@
         "uefi.h": "c",
         "uefibasetype.h": "c",
         "base.h": "c",
-        "processorbind.h": "c"
+        "processorbind.h": "c",
+        "frame_buffer_config.hpp": "c",
+        "fileinfo.h": "c"
     }
 }

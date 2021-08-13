@@ -9,8 +9,8 @@
 #include <Protocol/DiskIo2.h>
 #include <Protocol/BlockIo.h>
 #include <Guid/FileInfo.h>
+#include "frame_buffer_config.hpp"
 
-// #@@range_begin(struct_memory_map)
 struct MemoryMap
 {
     UINTN buffer_size;
@@ -20,9 +20,7 @@ struct MemoryMap
     UINTN descriptor_size;
     UINT32 descriptor_version;
 };
-// #@@range_end(struct_memory_map)
 
-// #@@range_begin(get_memory_map)
 EFI_STATUS GetMemoryMap(struct MemoryMap *map)
 {
     if (map->buffer == NULL)
@@ -38,9 +36,7 @@ EFI_STATUS GetMemoryMap(struct MemoryMap *map)
         &map->descriptor_size,
         &map->descriptor_version);
 }
-// #@@range_end(get_memory_map)
 
-// #@@range_begin(get_memory_type)
 const CHAR16 *GetMemoryTypeUnicode(EFI_MEMORY_TYPE type)
 {
     switch (type)
@@ -125,7 +121,6 @@ EFI_STATUS SaveMemoryMap(struct MemoryMap *map, EFI_FILE_PROTOCOL *file)
 
     return EFI_SUCCESS;
 }
-// #@@range_end(save_memory_map)
 
 EFI_STATUS OpenRootDir(EFI_HANDLE image_handle, EFI_FILE_PROTOCOL **root)
 {
@@ -373,11 +368,31 @@ EFI_STATUS EFIAPI UefiMain(
 
 #pragma region call_kernel
     UINT64 entry_addr = *(UINT64 *)(kernel_base_addr + 24); // entry pointのいちを求める24Byteのオフセットは仕様
-    typedef void EntryPointType(UINT64, UINT64);
+
+    struct FrameBufferConfig config = {
+        (UINT8 *)gop->Mode->FrameBufferBase,
+        gop->Mode->Info->PixelsPerScanLine,
+        gop->Mode->Info->HorizontalResolution,
+        gop->Mode->Info->VerticalResolution,
+        0,
+    };
+
+    switch (gop->Mode->Info->PixelFormat)
+    {
+    case PixelRedGreenBlueReserved8BitPerColor:
+        config.pixel_format = kPixelRGBResv8BitPerColor;
+        break;
+    case PixelBlueGreenRedReserved8BitPerColor:
+        config.pixel_format = kPixelBGRResv8BitPerColor;
+        break;
+    default:
+        Print(L"Unimplemented pixel format: %d\n", gop->Mode->Info->PixelFormat);
+        Halt();
+    }
+
+    typedef void EntryPointType(const struct FrameBufferConfig *);
     EntryPointType *entry_point = (EntryPointType *)entry_addr; // 関数としてキャスト
-    entry_point(
-        gop->Mode->FrameBufferBase,
-        gop->Mode->FrameBufferSize);
+    entry_point(&config);
 #pragma endregion call_kernal
 
     Print(L"All done\n");

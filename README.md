@@ -24,8 +24,11 @@ ln -s /home/yshira/Work/os/mymikanos/day03/MikanLoaderPkg ./
 source edksetup.sh
 # edk2のbuildコマンドでpythonが見つからない場合->特定のpythonを指定してやる。
 PYTHON_COMMAND=python3 build
+
+# 予めWindows側でXlaunchを実行しておく。
+
 # ビルド結果を読み込んで動作確認（day03aの時点の引数）
-$HOME/osbook/devenv/run_qemu.sh Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi ${HOME}/Work/os/mymikanos/day03/kernel/kernel.elf
+$HOME/osbook/devenv/run_qemu.sh Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi ${HOME}/Work/os/mymikanos/day04/kernel/kernel.elf
 ```
 
 ## efiを指定してwslからqemuを起動
