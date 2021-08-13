@@ -367,7 +367,7 @@ EFI_STATUS EFIAPI UefiMain(
 #pragma endregion exist_bs
 
 #pragma region call_kernel
-    UINT64 entry_addr = *(UINT64 *)(kernel_base_addr + 24); // entry pointのいちを求める24Byteのオフセットは仕様
+    UINT64 entry_addr = *(UINT64 *)(kernel_base_addr + 24); // entry pointの位置を求める24Byteのオフセットは仕様
 
     struct FrameBufferConfig config = {
         (UINT8 *)gop->Mode->FrameBufferBase,
