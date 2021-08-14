@@ -38,4 +38,20 @@ $HOME/osbook/devenv/run_qemu.sh Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.ef
 ```bash
 ~/osbook/devenv/run_qemu.sh <Loader.efi>
 ```
+# Makefile
 
+## 自動変数
+[Makfile基本的書き方まとめ](https://kzky.hatenablog.com/entry/2014/12/21/Makfile%E5%9F%BA%E6%9C%AC%E7%9A%84%E6%9B%B8%E3%81%8D%E6%96%B9%E3%81%BE%E3%81%A8%E3%82%81) 
+| 変数名 |役割|
+| - | -|
+|$@ |	ターゲット名
+|$% |	ターゲットメンバー名
+|$< |	最初の必須項目
+|$? |	ターゲットよりも新しい必須項目全て
+|$^ |	全ての必須項目 項目は重複しない
+|$+| 	全ての必須項目 項目は重複する
+| $*| 	ターゲット名 ただし、suffixがない
+
+
+# REF
+* [東雲フォント](http://openlab.ring.gr.jp/efont/shinonome/)

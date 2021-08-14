@@ -1,5 +1,5 @@
 TARGET=kernel.elf
-OBJS=main.o graphics.o font.o
+OBJS=main.o graphics.o font.o hankaku.o
 DEPENDS=$(join $(dir $(OBJS)), $(addprefix .,$(notdir $(OBJS:.o=.d))))
 
 CXXFLAS+=\
@@ -36,6 +36,12 @@ kernel.elf: $(OBJS) Makefile
 	clang++ $(CPPFLAGS) $(CXXFLAS) -MM $< > $@
 	$(eval OBJ = $(<:.cpp=.o))
 	sed --in-place 's|$(notdir $(OBJ))|$(OBJ)|' $@
+
+hankaku.bin: hankaku.txt
+	../tools/makefont.py -o $@ $<
+
+hankaku.o: hankaku.bin
+	objcopy -I binary -O elf64-x86-64 -B i386:x86-64 $< $@
 
 .PHONY: depends
 depends:
