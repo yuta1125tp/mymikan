@@ -8,6 +8,25 @@
 
 #include "frame_buffer_config.hpp"
 
+const uint8_t kFontA[16] = {
+    0b00000000, //
+    0b00011000, //    **
+    0b00011000, //    **
+    0b00011000, //    **
+    0b00011000, //    **
+    0b00100100, //   *  *
+    0b00100100, //   *  *
+    0b00100100, //   *  *
+    0b00100100, //   *  *
+    0b01111110, //  ******
+    0b01000010, //  *    *
+    0b01000010, //  *    *
+    0b01000010, //  *    *
+    0b11100111, // ***  ***
+    0b00000000, //
+    0b00000000, //
+};
+
 struct PixelColor
 {
     uint8_t r, g, b;
@@ -74,6 +93,33 @@ public:
     }
 };
 
+/**
+ * @brief Asciiコードに従ってPixelWriterで指定した座標に文字を表示ｄｓ
+ * 
+ * @param writer 
+ * @param x 
+ * @param y 
+ * @param c 
+ * @param color 
+ */
+void WriteAscii(PixelWriter &writer, int x, int y, char c, const PixelColor &color)
+{
+    if (c != 'A')
+    {
+        return;
+    }
+    for (int dy = 0; dy < 16; dy++)
+    {
+        for (int dx = 0; dx < 8; dx++)
+        {
+            if ((kFontA[dy] << dx) & 0x80u)
+            {
+                writer.Write(x + dx, y + dy, color);
+            }
+        }
+    }
+}
+
 #pragma region 配置new
 // 配置newの実装、include<new>でもOK、[ref](みかん本@105p)
 void *operator new(size_t size, void *buf)
@@ -125,6 +171,9 @@ extern "C" void KernelMain(
             pixel_writer->Write(100 + x, 100 + y, {0, 255, 0});
         }
     }
+
+    WriteAscii(*pixel_writer, 50, 50, 'A', {0, 0, 0});
+    WriteAscii(*pixel_writer, 58, 50, 'A', {0, 128, 0});
 
     while (1)
         __asm__("hlt");
