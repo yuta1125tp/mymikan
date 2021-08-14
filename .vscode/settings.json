@@ -6,6 +6,9 @@
         "base.h": "c",
         "processorbind.h": "c",
         "frame_buffer_config.hpp": "c",
-        "fileinfo.h": "c"
+        "fileinfo.h": "c",
+        "elf.h": "c",
+        "elf.hpp": "c",
+        "cstdint": "cpp"
     }
 }

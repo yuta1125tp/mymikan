@@ -16,11 +16,13 @@ GitLensを使うと便利。
 
 ## QEMUで動作確認する際の手順
 ```bash
+# cコンパイラなど開発環境を読み込む
+source $HOME/osbook/devenv/buildenv.sh
 # 移動
 cd $HOME/edk2
 # シンボリックリンクを貼る
 ln -s /home/yshira/Work/os/mymikanos/day03/MikanLoaderPkg ./
-# 開発環境を読み込む
+# edk2に関する開発環境を読み込む
 source edksetup.sh
 # edk2のbuildコマンドでpythonが見つからない場合->特定のpythonを指定してやる。
 PYTHON_COMMAND=python3 build
