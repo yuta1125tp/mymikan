@@ -9,6 +9,7 @@
         "fileinfo.h": "c",
         "elf.h": "c",
         "elf.hpp": "c",
-        "cstdint": "cpp"
+        "cstdint": "cpp",
+        "types.h": "c"
     }
 }

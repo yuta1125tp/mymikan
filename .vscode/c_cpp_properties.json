@@ -5,7 +5,8 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "/home/yshira/edk2/MdePkg/Include",
-                "/home/yshira/edk2/MdePkg/Include/X64"
+                "/home/yshira/edk2/MdePkg/Include/X64",
+                "/usr/include/x86_64-linux-gnu"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",
