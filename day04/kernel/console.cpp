@@ -1,3 +1,8 @@
+/**
+ * @file console.cpp
+ * @brief コンソールのクラス
+ * 
+ */
 #include "console.hpp"
 #include <cstring>
 #include "font.hpp"
