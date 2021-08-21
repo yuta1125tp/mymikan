@@ -10,6 +10,7 @@
         "elf.h": "c",
         "elf.hpp": "c",
         "cstdint": "cpp",
-        "types.h": "c"
+        "types.h": "c",
+        "cstring": "cpp"
     }
 }
