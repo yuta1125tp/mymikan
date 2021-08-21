@@ -59,6 +59,14 @@ template <typename T>
 struct Vecotr2D
 {
     T x, y;
+
+    template <typename U>
+    Vecotr2D<T> &operator+=(const Vecotr2D<U> &rhs)
+    {
+        x += rhs.x;
+        y += rhs.y;
+        return *this;
+    }
 };
 
 void DrawRectangle(
