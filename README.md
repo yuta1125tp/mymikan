@@ -14,6 +14,15 @@ GitLensを使うと便利。
 で2つのコミット（タグ）を指定することで差分を表示できる。
 選択順序は新しい方（右に表示）、古い方（左に表示）の順番がよいかも
 
+
+## kernelのコンパイル
+```bash
+# cコンパイラなど開発環境を読み込む
+source $HOME/osbook/devenv/buildenv.sh
+cd /home/yshira/Work/os/mymikanos/day04/kernel
+make
+```
+
 ## QEMUで動作確認する際の手順
 ```bash
 # cコンパイラなど開発環境を読み込む
