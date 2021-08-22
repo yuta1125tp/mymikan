@@ -1,5 +1,13 @@
 TARGET=kernel.elf
-OBJS=main.o graphics.o font.o hankaku.o newlib_support.o console.o
+OBJS=\
+	main.o \
+	graphics.o \
+	font.o \
+	hankaku.o \
+	newlib_support.o \
+	console.o \
+	pci.o \
+	asmfunc.o
 DEPENDS=$(join $(dir $(OBJS)), $(addprefix .,$(notdir $(OBJS:.o=.d))))
 
 CFLAGS+=\
@@ -52,6 +60,10 @@ kernel.elf: $(OBJS) Makefile
 	clang $(CPPFLAGS) $(CFLAS) -MM $< > $@
 	$(eval OBJ = $(<:.c=.o))
 	sed --in-place 's|$(notdir $(OBJ))|$(OBJ)|' $@
+
+
+%.o: %.asm Makefile
+	nasm -f elf64 -o $@ $<
 
 hankaku.bin: hankaku.txt
 	../tools/makefont.py -o $@ $<
