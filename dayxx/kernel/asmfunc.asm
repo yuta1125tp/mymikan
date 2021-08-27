@@ -1,7 +1,7 @@
 ; asmfunc.asm
 ;
 ; System V AMD64 Calling Convention
-; Registers: RDI, RSI, RDX, RCX, R8, R9
+; Registers: 引数はRDI, RSI, RDX, RCX, R8, R9の襦袢に割り当てられる。
 
 bits 64
 section .text
@@ -16,5 +16,5 @@ IoOut32:
 global IoIn32 ; uint 32_t IoIn32(uint16_t addr);
 IoIn32:
     mov dx, di; dx=addr
-    in eax, dx
-    ret
+    in eax, dx; DXに設定されたIOポートアドレスから32bit整数を入力してEAXに設定する。
+    ret; RAXレジスタの値が戻り値になる。RAXの下32bitがEAX[ref](みかん本図3.2@71p)なので、RAXを返せばEAXを64bitで返すことに相当、上32bitの初期値は気にしなくて良い？
