@@ -30,17 +30,15 @@ namespace
     }
 
     /** @brief devices[num_device] に情報を書き込み num_device をインクリメントする． */
-    Error AddDevice(
-        uint8_t bus, uint8_t device,
-        uint8_t function, uint8_t header_type)
+    Error AddDevice(const Device &device)
     {
         if (num_device == devices.size())
         {
-            return Error::kFull;
+            return MAKE_ERROR(Error::kFull);
         }
-        devices[num_device] = Device{bus, device, function, header_type};
+        devices[num_device] = device;
         ++num_device;
-        return Error::kSuccess;
+        return MAKE_ERROR(Error::kSuccess);
     }
 
     Error ScanBus(uint8_t bus);
@@ -50,17 +48,15 @@ namespace
    */
     Error ScanFunction(uint8_t bus, uint8_t device, uint8_t function)
     {
+        auto class_code = ReadClassCode(bus, device, function);
         auto header_type = ReadHeaderType(bus, device, function);
-        if (auto err = AddDevice(bus, device, function, header_type))
+        Device dev{bus, device, function, header_type, class_code};
+        if (auto err = AddDevice(dev))
         {
             return err;
         }
 
-        auto class_code = ReadClassCode(bus, device, function);
-        uint8_t base = (class_code >> 24) & 0xffu; // 大雑把なデバイス種別：たとえば0x0c=シリアル通信のためのコントローラなど
-        uint8_t sub = (class_code >> 16) & 0xffu;  // 細かいデバイス種別 ：たとえば0x03=USB
-
-        if (base == 0x06u && sub == 0x04u)
+        if (class_code.Match(0x06u, 0x04u))
         {
             // standard PCI-PCI bridge
             // ブリッジの上流側がプライマリバス、下流側がセカンダリバス
@@ -70,7 +66,7 @@ namespace
             return ScanBus(secondary_bus);
         }
 
-        return Error::kSuccess;
+        return MAKE_ERROR(Error::kSuccess);
     }
 
     /** @brief 指定のデバイス番号の各ファンクションをスキャンする．
@@ -84,7 +80,7 @@ namespace
         }
         if (IsSingleFunctionDevice(ReadHeaderType(bus, device, 0)))
         {
-            return Error::kSuccess;
+            return MAKE_ERROR(Error::kSuccess);
         }
 
         for (uint8_t function = 1; function < 8; function++)
@@ -98,7 +94,7 @@ namespace
                 return err;
             }
         }
-        return Error::kSuccess;
+        return MAKE_ERROR(Error::kSuccess);
     }
 
     /** @brief 指定のバス番号の各デバイスをスキャンする．
@@ -118,7 +114,7 @@ namespace
                 return err;
             }
         }
-        return Error::kSuccess;
+        return MAKE_ERROR(Error::kSuccess);
     }
 }
 
@@ -151,7 +147,7 @@ namespace pci
     uint16_t ReadDeviceId(uint8_t bus, uint8_t device, uint8_t function)
     {
         // PCIコンフィギュレーション空間の先頭から32bit読んで、上16bit分がDeviceId[ref](図6.3みかん本@142)
-        WriteAddress(MakeAddress(bus, device, function, 0x00));
+        WriteAddress(MakeAddress(bus, device, function, 0x0c));
         return ReadData() >> 16;
     }
 
@@ -162,12 +158,16 @@ namespace pci
         return (ReadData() >> 16) & 0xffu;
     }
 
-    uint32_t ReadClassCode(uint8_t bus, uint8_t device, uint8_t function)
+    ClassCode ReadClassCode(uint8_t bus, uint8_t device, uint8_t function)
     {
         // PCIコンフィギュレーション空間の0x08から32bit読んで、上16bitの上8bitがBaseClass, 下8bitがSub Class[ref](図6.3みかん本@142)
-        // この関数の返り値は0x08から読んだ32bit全部返すので外で解釈する必要がある。
         WriteAddress(MakeAddress(bus, device, function, 0x08));
-        return ReadData();
+        auto reg = ReadData();
+        ClassCode cc;
+        cc.base = (reg >> 24) & 0xffu;     // 大雑把なデバイス種別：たとえば0x0c=シリアル通信のためのコントローラなど[ref](みかん本149p)
+        cc.sub = (reg >> 16) & 0xffu;      // 細かいデバイス種別：たとえば0x03=USB
+        cc.interface = (reg >> 8) & 0xffu; // レジスタレベルの仕様：たとえば、0x20はUSB2.0(EHCI), 0x30はUSB3.0(xHCI)など
+        return cc;
     }
 
     uint32_t ReadBusNumbers(uint8_t bus, uint8_t device, uint8_t function)
@@ -195,7 +195,7 @@ namespace pci
 
         // マルチファンクションデバイスである場合は、ホストブリッジが複数あり、
         // この場合はファンクション0のホストブリッジはバス0を担当し、ファンクション1のホストブリッジはバス1が担当するというように、ファンクション番号が担当バス番号を表す。
-        for (uint8_t function = 1; function < 8; function++)
+        for (uint8_t function = 0; function < 8; function++)
         {
             if (ReadVendorId(0, 0, function) == 0xffffu) // 0xffffuは無効値
             {
@@ -206,6 +206,46 @@ namespace pci
                 return err;
             }
         }
-        return Error::kSuccess;
+        return MAKE_ERROR(Error::kSuccess);
+    }
+
+    uint32_t ReadConfReg(const Device &dev, uint8_t reg_addr)
+    {
+        WriteAddress(MakeAddress(dev.bus, dev.device, dev.function, reg_addr));
+        return ReadData();
+    }
+
+    void WriteConfReg(const Device &dev, uint8_t reg_addr, uint32_t value)
+    {
+        WriteAddress(MakeAddress(dev.bus, dev.device, dev.function, reg_addr));
+        WriteData(value);
+    }
+
+    WithError<uint64_t> ReadBar(Device &device, unsigned int bar_index)
+    {
+        if (bar_index >= 6)
+        {
+            return {0, MAKE_ERROR(Error::kIndexOutOfRange)};
+        }
+
+        const auto addr = CalcBarAddress(bar_index);
+        const auto bar = ReadConfReg(device, addr);
+
+        // 32 bit address
+        if ((bar & 4u) == 0)
+        {
+            return {bar, MAKE_ERROR(Error::kSuccess)};
+        }
+
+        // 64 bit address
+        if (bar_index >= 5)
+        {
+            return {0, MAKE_ERROR(Error::kIndexOutOfRange)};
+        }
+
+        const auto bar_upper = ReadConfReg(device, addr + 4);
+        return {
+            bar | (static_cast<uint64_t>(bar_upper) << 32),
+            MAKE_ERROR(Error::kSuccess)};
     }
 }

@@ -7,11 +7,22 @@
 #include <cstddef>
 #include <cstdio>
 
+#include <numeric>
+#include <vector>
+
 #include "frame_buffer_config.hpp"
 #include "graphics.hpp"
+#include "mouse.hpp"
 #include "font.hpp"
 #include "console.hpp"
 #include "pci.hpp"
+#include "logger.hpp"
+
+#include "usb/memory.hpp"
+#include "usb/device.hpp"
+#include "usb/classdriver/mouse.hpp"
+#include "usb/xhci/xhci.hpp"
+#include "usb/xhci/trb.hpp"
 
 #pragma region 配置new
 // /**
@@ -33,37 +44,6 @@ void operator delete(void *obj) noexcept
 
 const PixelColor kDesktopBGColor{45, 118, 237};
 const PixelColor kDesktopFGColor{255, 255, 255};
-
-#pragma region マウスカーソル
-const int kMouseCursorWidth = 15;
-const int kMouseCursorHeight = 24;
-const char mouse_cursor_shape[kMouseCursorHeight][kMouseCursorWidth + 1] = {
-    "@              ",
-    "@@             ",
-    "@.@            ",
-    "@..@           ",
-    "@...@          ",
-    "@....@         ",
-    "@.....@        ",
-    "@......@       ",
-    "@.......@      ",
-    "@........@     ",
-    "@.........@    ",
-    "@..........@   ",
-    "@...........@  ",
-    "@............@ ",
-    "@......@@@@@@@@",
-    "@......@       ",
-    "@....@@.@      ",
-    "@...@ @.@      ",
-    "@..@   @.@     ",
-    "@.@    @.@     ",
-    "@@      @.@    ",
-    "@       @.@    ",
-    "         @.@   ",
-    "         @@@   ",
-};
-#pragma endregion
 
 // カーネル関数で利用するグローバル変数の定義
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
@@ -93,6 +73,47 @@ int printk(const char *format, ...)
     return result;
 }
 
+#pragma region // マウスカーソル
+char mouse_cursor_buf[sizeof(MouseCursor)];
+MouseCursor *mouse_cursor;
+
+void MouseObserver(
+    /*uint8_t button,*/
+    int8_t displacement_x,
+    int8_t displacement_y)
+{
+    mouse_cursor->MoveRelative({displacement_x, displacement_y});
+}
+#pragma endregion
+
+#pragma region SwitchEhci2Xhci
+
+void SwitchEhci2Xhci(const pci::Device &xhc_dev)
+{
+    bool intel_ehc_exist = false;
+    for (int i = 0; i < pci::num_device; ++i)
+    {
+        if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x20u) /* EHCI */ &&
+            0x8086 == pci::ReadVendorId(pci::devices[i]))
+        {
+            intel_ehc_exist = true;
+            break;
+        }
+    }
+    if (!intel_ehc_exist)
+    {
+        return;
+    }
+
+    uint32_t superspeed_ports = pci::ReadConfReg(xhc_dev, 0xdc); // USB3PRM
+    pci::WriteConfReg(xhc_dev, 0xd8, superspeed_ports);          // USB3_PSSEN
+    uint32_t ehci2xhci_ports = pci::ReadConfReg(xhc_dev, 0xd4);  // XUSB2PRM
+    pci::WriteConfReg(xhc_dev, 0xd0, ehci2xhci_ports);           // XUSB2PR
+    Log(kDebug, "SwitchEhci2Xhci: SS = %02x, xHCI = %02x\n",
+        superspeed_ports, ehci2xhci_ports);
+}
+
+#pragma endregion
 /**
  * @brief カーネル関数
  * 
@@ -141,41 +162,114 @@ extern "C" void KernelMain(
     //（統一初期化記法、Uniform Initialization）によるものらしい。
     // 同じ文脈で配列の初期化も波括弧でできる。
     // [ref](https://faithandbrave.hateblo.jp/entry/20111221/1324394299)
-    console = new (console) Console{
+    console = new (console_buf) Console{
         *pixel_writer,
         kDesktopFGColor,
         kDesktopBGColor};
 
     printk("Welcome to MikanOS!!\n");
+    SetLogLevel(kDebug);
 
-    for (size_t dy = 0; dy < kMouseCursorHeight; dy++)
-    {
-        for (size_t dx = 0; dx < kMouseCursorWidth; dx++)
-        {
-            if (mouse_cursor_shape[dy][dx] == '@')
-            {
-                pixel_writer->Write(200 + dx, 100 + dy, {0, 0, 0});
-            }
-            else if (mouse_cursor_shape[dy][dx] == '.')
-            {
-                pixel_writer->Write(200 + dx, 100 + dy, {255, 255, 255});
-            }
-        }
-    }
+    mouse_cursor = new (mouse_cursor_buf) MouseCursor{
+        pixel_writer,
+        kDesktopBGColor,
+        {300, 200}};
 
     auto err = pci::ScanAllBus();
-    printk("ScanAllBus: %s\n", err.Name());
+    Log(kDebug, "ScanAllBus: %s\n", err.Name());
 
     for (int i = 0; i < pci::num_device; i++)
     {
         const auto &dev = pci::devices[i];
-        auto vendor_id = pci::ReadVendorId(dev.bus, dev.device, dev.function);
+        auto vendor_id = pci::ReadVendorId(dev);
         auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
-        printk("%d.%d.%d: vend %04x, class %08x, head %02x\n",
-               dev.bus, dev.device, dev.function,
-               vendor_id, class_code, dev.header_type);
+        Log(kDebug, "%d.%d.%d: vend %04x, class %08x, head %02x\n",
+            dev.bus, dev.device, dev.function,
+            vendor_id, class_code, dev.header_type);
     }
 
+    // Intel製を優先してxHCを探す。
+    pci::Device *xhc_dev = nullptr;
+    for (int i = 0; i < pci::num_device; i++)
+    {
+        // 0x0c: シリアルバスのコントローラ全体
+        // 0x03: USBコントローラ
+        // 0x30: xHCI
+        if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x30u))
+        {
+            xhc_dev = &pci::devices[i];
+            if (0x8086 == pci::ReadVendorId(*xhc_dev))
+            {
+                // VenderIDが0x8086ならIntel製
+                break;
+            }
+        }
+    }
+    if (xhc_dev)
+    {
+        Log(kInfo, "xHC has been found: %d.%d.%d\n",
+            xhc_dev->bus, xhc_dev->device, xhc_dev->function);
+    }
+
+    // BAR0レジスタを読み込む
+    const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
+    Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
+    // ~static_cast<uint64_t>0xfは0xffff'ffff'ffff'fff0のビットマスク
+    // xhc_bar.valueの下位4ビットを0にした値を用意するために使う
+    // 64bitのビットマスクにするためにstatic_castしている。
+    const uint64_t xhc_mmio_base = xhc_bar.value & ~static_cast<uint64_t>(0xf);
+    Log(kDebug, "xHC mmio_base = %08lx\n", xhc_mmio_base);
+
+    //BAR0の値を使ってxHCを初期化する
+    usb::xhci::Controller xhc{xhc_mmio_base};
+    if (0x8086 == pci::ReadVendorId(*xhc_dev))
+    {
+        // EHCIではなくxHCIで制御する設定へ変更する[ref](みかん本154p)
+        SwitchEhci2Xhci(*xhc_dev);
+    }
+    {
+        auto err = xhc.Initialize();
+        Log(kDebug, "xhc.Initialize: %s\n", err.Name());
+    }
+
+    // xHCの動作を開始
+    Log(kInfo, "xHC starting\n");
+    xhc.Run();
+
+    usb::HIDMouseDriver::default_observer = MouseObserver;
+    for (int i = 1; i <= xhc.MaxPorts(); i++)
+    {
+        auto port = xhc.PortAt(i);
+        Log(kDebug, "Port %d: IsConnected=%d\n", i, port.IsConnected());
+
+        if (port.IsConnected())
+        {
+            if (auto err = ConfigurePort(xhc, port))
+            {
+                Log(kError, "failed to configure port: %s at %s:%d\n",
+                    err.Name(), err.File(), err.Line());
+                continue;
+            }
+        }
+    }
+
+    // xHCに溜まったイベントを処理し続ける。
+    while (1)
+    {
+        if (auto err = ProcessEvent(xhc))
+        {
+            Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
+                err.Name(), err.File(), err.Line());
+        }
+    }
+
+    while (1)
+        __asm__("hlt");
+}
+
+// add day06c
+extern "C" void __cxa_pure_virtual()
+{
     while (1)
         __asm__("hlt");
 }

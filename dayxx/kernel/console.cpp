@@ -1,6 +1,6 @@
 /**
  * @file console.cpp
- * @brief コンソールのクラス
+ * @brief コンソール描画のためのプログラムを集めたファイル
  * 
  */
 #include "console.hpp"

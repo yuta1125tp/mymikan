@@ -56,12 +56,12 @@ public:
 };
 
 template <typename T>
-struct Vecotr2D
+struct Vector2D
 {
     T x, y;
 
     template <typename U>
-    Vecotr2D<T> &operator+=(const Vecotr2D<U> &rhs)
+    Vector2D<T> &operator+=(const Vector2D<U> &rhs)
     {
         x += rhs.x;
         y += rhs.y;
@@ -70,8 +70,8 @@ struct Vecotr2D
 };
 
 void DrawRectangle(
-    PixelWriter &writer, const Vecotr2D<int> &pos,
-    const Vecotr2D<int> &size, const PixelColor &c);
+    PixelWriter &writer, const Vector2D<int> &pos,
+    const Vector2D<int> &size, const PixelColor &c);
 void FillRectangle(
-    PixelWriter &writer, const Vecotr2D<int> &pos,
-    const Vecotr2D<int> &size, const PixelColor &c);
+    PixelWriter &writer, const Vector2D<int> &pos,
+    const Vector2D<int> &size, const PixelColor &c);
