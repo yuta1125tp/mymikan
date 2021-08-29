@@ -416,6 +416,26 @@ EFI_STATUS EFIAPI UefiMain(EFI_HANDLE image_handle,
     }
 #pragma endregion
 
+#pragma region day06c時点に追記のあった箇所
+    // なにしているのか？ TODO
+    status = gBS->ExitBootServices(image_handle, memmap.map_key);
+    if (EFI_ERROR(status))
+    {
+        status = GetMemoryMap(&memmap);
+        if (EFI_ERROR(status))
+        {
+            Print(L"failed to get memory map: %r\n", status);
+            Halt();
+        }
+        status = gBS->ExitBootServices(image_handle, memmap.map_key);
+        if (EFI_ERROR(status))
+        {
+            Print(L"Could not exit boot service: %r\n", status);
+            Halt();
+        }
+    }
+#pragma endregion
+
 #pragma region call_kernel
     UINT64 entry_addr = *(UINT64 *)(kernel_first_addr + 24); // entry pointの位置を求める24Byteのオフセットは仕様
 
