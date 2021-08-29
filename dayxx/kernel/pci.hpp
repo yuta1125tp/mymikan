@@ -55,13 +55,13 @@ namespace pci
     /** @brief ヘッダタイプレジスタを読み取る（全ヘッダタイプ共通） */
     uint8_t ReadHeaderType(uint8_t bus, uint8_t device, uint8_t function);
     /** @brief クラスコードレジスタを読み取る（全ヘッダタイプ共通）
-   *
-   * 返される 32 ビット整数の構造は次の通り．
-   *   - 31:24 : ベースクラス
-   *   - 23:16 : サブクラス
-   *   - 15:8  : インターフェース
-   *   - 7:0   : リビジョン
-   */
+     *
+     * 返される 32 ビット整数の構造は次の通り．
+     *   - 31:24 : ベースクラス
+     *   - 23:16 : サブクラス
+     *   - 15:8  : インターフェース
+     *   - 7:0   : リビジョン
+     */
     ClassCode ReadClassCode(uint8_t bus, uint8_t device, uint8_t function);
 
     inline uint16_t ReadVendorId(const Device &dev)

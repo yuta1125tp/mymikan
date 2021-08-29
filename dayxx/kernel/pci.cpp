@@ -147,7 +147,7 @@ namespace pci
     uint16_t ReadDeviceId(uint8_t bus, uint8_t device, uint8_t function)
     {
         // PCIコンフィギュレーション空間の先頭から32bit読んで、上16bit分がDeviceId[ref](図6.3みかん本@142)
-        WriteAddress(MakeAddress(bus, device, function, 0x0c));
+        WriteAddress(MakeAddress(bus, device, function, 0x00));
         return ReadData() >> 16;
     }
 

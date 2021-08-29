@@ -24,23 +24,23 @@
 #include "usb/xhci/xhci.hpp"
 #include "usb/xhci/trb.hpp"
 
-#pragma region 配置new
-// /**
-//  * @brief 配置newの実装、include<new>でもOK、[ref](みかん本@105p)
-//  *
-//  * @param size
-//  * @param buf
-//  * @return void*
-//  */
-// void *operator new(size_t size, void *buf)
-// {
-//     return buf;
-// }
+// #pragma region 配置new
+// // /**
+// //  * @brief 配置newの実装、include<new>でもOK、[ref](みかん本@105p)
+// //  *
+// //  * @param size
+// //  * @param buf
+// //  * @return void*
+// //  */
+// // void *operator new(size_t size, void *buf)
+// // {
+// //     return buf;
+// // }
 
-void operator delete(void *obj) noexcept
-{
-}
-#pragma endregion
+// void operator delete(void *obj) noexcept
+// {
+// }
+// #pragma endregion
 
 const PixelColor kDesktopBGColor{45, 118, 237};
 const PixelColor kDesktopFGColor{255, 255, 255};
@@ -82,6 +82,7 @@ void MouseObserver(
     int8_t displacement_x,
     int8_t displacement_y)
 {
+    // Log(kDebug, "MouseObserver %d, %d\n", displacement_x, displacement_y);
     mouse_cursor->MoveRelative({displacement_x, displacement_y});
 }
 #pragma endregion
@@ -168,7 +169,7 @@ extern "C" void KernelMain(
         kDesktopBGColor};
 
     printk("Welcome to MikanOS!!\n");
-    SetLogLevel(kDebug);
+    SetLogLevel(kInfo);
 
     mouse_cursor = new (mouse_cursor_buf) MouseCursor{
         pixel_writer,
@@ -183,9 +184,13 @@ extern "C" void KernelMain(
         const auto &dev = pci::devices[i];
         auto vendor_id = pci::ReadVendorId(dev);
         auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
-        Log(kDebug, "%d.%d.%d: vend %04x, class %08x, head %02x\n",
+        Log(kDebug, "%d.%d.%d: vend %04x, class %08x, base[%02x], sub[%02x] i/f[%02x], head %02x\n",
             dev.bus, dev.device, dev.function,
-            vendor_id, class_code, dev.header_type);
+            vendor_id, class_code,
+            class_code.base,
+            class_code.sub,
+            class_code.interface,
+            dev.header_type);
     }
 
     // Intel製を優先してxHCを探す。
@@ -252,6 +257,7 @@ extern "C" void KernelMain(
             }
         }
     }
+    Log(kInfo, "start poling.\n");
 
     // xHCに溜まったイベントを処理し続ける。
     while (1)
