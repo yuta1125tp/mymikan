@@ -23,6 +23,8 @@
 #include "usb/classdriver/mouse.hpp"
 #include "usb/xhci/xhci.hpp"
 #include "usb/xhci/trb.hpp"
+#include "interrupt.hpp"
+#include "asmfunc.h"
 
 // #pragma region 配置new
 // // /**
@@ -115,6 +117,26 @@ void SwitchEhci2Xhci(const pci::Device &xhc_dev)
 }
 
 #pragma endregion
+
+#pragma region 割り込み処理
+usb::xhci::Controller *xhc;
+
+__attribute__((interrupt)) void IntHandlerXHCI(InterruptFrame *frame)
+{
+    // xHCに溜まったイベントを処理し続ける。
+    while (xhc->PrimaryEventRing()->HasFront())
+    {
+        Log(kDebug, "");
+        if (auto err = ProcessEvent(*xhc))
+        {
+            Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
+                err.Name(), err.File(), err.Line());
+        }
+    }
+    NotifyEndOfInterrupt();
+}
+#pragma endregion
+
 /**
  * @brief カーネル関数
  * 
@@ -169,7 +191,7 @@ extern "C" void KernelMain(
         kDesktopBGColor};
 
     printk("Welcome to MikanOS!!\n");
-    SetLogLevel(kInfo);
+    SetLogLevel(kDebug);
 
     mouse_cursor = new (mouse_cursor_buf) MouseCursor{
         pixel_writer,
@@ -216,6 +238,26 @@ extern "C" void KernelMain(
             xhc_dev->bus, xhc_dev->device, xhc_dev->function);
     }
 
+    const uint16_t cs = GetCS(); // 現在のコードセグメントセレクタの値を取得
+    SetIDTEntry(
+        idt[InterruptVector::kXHCI],
+        MakeIDTAttr(DescriptorType::kInterruptGate, 0),
+        reinterpret_cast<uint64_t>(IntHandlerXHCI),
+        cs);
+    LoadIDT(sizeof(idt) - 1, reinterpret_cast<uintptr_t>(&idt[0]));
+
+    // 0xfee00020番地のびっと31:24を読むことでプログラムが動作しているコアのLocal APIC IDを取得
+    // マルチコアCPUでも他のコアを有効にする前は、最初に起動するコア（Bootstrap Processor, BSP）だけが起動している（この時点でもそう）
+    const uint8_t bsp_local_apic_id = *reinterpret_cast<const uint32_t *>(0xfee00020) >> 24;
+    pci::ConfigureMSIFixedDestination(
+        *xhc_dev,                     //
+        bsp_local_apic_id,            // Destination IDフィールドに設定する値[ref](みかん図7.5)
+        pci::MSITriggerMode::kLevel,  //
+        pci::MSIDeliveryMode::kFixed, // vectoフィールドに設定する値[ref](みかん図7.6)
+        InterruptVector::kXHCI,       //
+        0                             //
+    );
+
     // BAR0レジスタを読み込む
     const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
     Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
@@ -241,6 +283,9 @@ extern "C" void KernelMain(
     Log(kInfo, "xHC starting\n");
     xhc.Run();
 
+    ::xhc = &xhc;
+    __asm__("sti");
+
     usb::HIDMouseDriver::default_observer = MouseObserver;
     for (int i = 1; i <= xhc.MaxPorts(); i++)
     {
@@ -257,17 +302,18 @@ extern "C" void KernelMain(
             }
         }
     }
-    Log(kInfo, "start poling.\n");
 
-    // xHCに溜まったイベントを処理し続ける。
-    while (1)
-    {
-        if (auto err = ProcessEvent(xhc))
-        {
-            Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
-                err.Name(), err.File(), err.Line());
-        }
-    }
+    // Log(kInfo, "start poling.\n");
+
+    // // xHCに溜まったイベントを処理し続ける。
+    // while (1)
+    // {
+    //     if (auto err = ProcessEvent(xhc))
+    //     {
+    //         Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
+    //             err.Name(), err.File(), err.Line());
+    //     }
+    // }
 
     while (1)
         __asm__("hlt");
