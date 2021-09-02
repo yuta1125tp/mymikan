@@ -25,6 +25,7 @@
 #include "usb/xhci/trb.hpp"
 #include "interrupt.hpp"
 #include "asmfunc.h"
+#include "queue.hpp"
 
 // #pragma region 配置new
 // // /**
@@ -121,18 +122,24 @@ void SwitchEhci2Xhci(const pci::Device &xhc_dev)
 #pragma region 割り込み処理
 usb::xhci::Controller *xhc;
 
+/**
+ * @brief 割り込みハンドラからメイン関数に対して送信するメッセージ
+ * 
+ */
+struct Message
+{
+    enum Type
+    {
+        kInterruptXHCI,
+    } type;
+};
+
+ArrayQueue<Message> *main_queue;
+
 __attribute__((interrupt)) void IntHandlerXHCI(InterruptFrame *frame)
 {
-    // xHCに溜まったイベントを処理し続ける。
-    while (xhc->PrimaryEventRing()->HasFront())
-    {
-        Log(kDebug, "");
-        if (auto err = ProcessEvent(*xhc))
-        {
-            Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
-                err.Name(), err.File(), err.Line());
-        }
-    }
+    // キューを介してメイン関数に割り込み発生を通知する
+    main_queue->Push(Message{Message::kInterruptXHCI});
     NotifyEndOfInterrupt();
 }
 #pragma endregion
@@ -197,6 +204,10 @@ extern "C" void KernelMain(
         pixel_writer,
         kDesktopBGColor,
         {300, 200}};
+
+    std::array<Message, 32> main_queue_data;
+    ArrayQueue<Message> main_queue{main_queue_data};
+    ::main_queue = &main_queue;
 
     auto err = pci::ScanAllBus();
     Log(kDebug, "ScanAllBus: %s\n", err.Name());
@@ -284,7 +295,6 @@ extern "C" void KernelMain(
     xhc.Run();
 
     ::xhc = &xhc;
-    __asm__("sti");
 
     usb::HIDMouseDriver::default_observer = MouseObserver;
     for (int i = 1; i <= xhc.MaxPorts(); i++)
@@ -303,20 +313,47 @@ extern "C" void KernelMain(
         }
     }
 
-    // Log(kInfo, "start poling.\n");
-
-    // // xHCに溜まったイベントを処理し続ける。
-    // while (1)
-    // {
-    //     if (auto err = ProcessEvent(xhc))
-    //     {
-    //         Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
-    //             err.Name(), err.File(), err.Line());
-    //     }
-    // }
-
+    Log(kInfo, "start event loop.\n");
+    // イベントループ
+    // キューに溜まったイベントを処理し続ける
     while (1)
-        __asm__("hlt");
+    {
+        // cli(Clear Interrupt Flag)命令はCPUの割り込みフラグ（IF, Interrupt Flag）を0にする命令。
+        // IFはCPU内のRFLAGSレジスタにあるフラグ。
+        // IFが0のときCPUは外部割り込みを受け取らなくなる。
+        // -> IntHandlerXHCI()は実行されなく鳴る。
+        __asm__("cli");
+        if (main_queue.Count() == 0)
+        {
+            // FIを1にしたあとすぐにhltに入る。
+            // sti命令と直後の1命令の間では割り込みが起きない仕様を利用するため、
+            // インラインアセンブラで複数命令を並べて実行している。[ref](みかん本180p脚注)
+            __asm__("sti\n\thlt");
+            continue;
+        }
+
+        Message msg = main_queue.Front();
+        main_queue.Pop();
+        // sti(Set Interrupt Flag)命令はFIを1にする命令
+        // FIが1のときCPUは外部割り込むを受け入れるようになる。
+        __asm__("sti");
+
+        switch (msg.type)
+        {
+        case Message::kInterruptXHCI:
+            while (xhc.PrimaryEventRing()->HasFront())
+            {
+                if (auto err = ProcessEvent(xhc))
+                {
+                    Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
+                        err.Name(), err.File(), err.Line());
+                }
+            }
+            break;
+        default:
+            Log(kError, "Unknown message type: %d\n", msg.type);
+        }
+    }
 }
 
 // add day06c
