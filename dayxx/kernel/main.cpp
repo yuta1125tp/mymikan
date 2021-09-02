@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "frame_buffer_config.hpp"
+#include "memory_map.hpp"
 #include "graphics.hpp"
 #include "mouse.hpp"
 #include "font.hpp"
@@ -149,7 +150,8 @@ __attribute__((interrupt)) void IntHandlerXHCI(InterruptFrame *frame)
  * 
  */
 extern "C" void KernelMain(
-    const FrameBufferConfig &frame_buffer_config)
+    const FrameBufferConfig &frame_buffer_config,
+    const MemoryMap &memory_map)
 {
     switch (frame_buffer_config.pixel_format)
     {
@@ -198,7 +200,33 @@ extern "C" void KernelMain(
         kDesktopBGColor};
 
     printk("Welcome to MikanOS!!\n");
-    SetLogLevel(kDebug);
+    SetLogLevel(kWarn);
+
+    const std::array available_memory_types{
+        MemoryType::kEfiBootServicesCode,
+        MemoryType::kEfiBootServicesData,
+        MemoryType::kEfiConventionalMemory,
+    };
+
+    printk("memory_map: %p\n", &memory_map);
+    for (uintptr_t iter = reinterpret_cast<uintptr_t>(memory_map.buffer);
+         iter < reinterpret_cast<uintptr_t>(memory_map.buffer) + memory_map.map_size;
+         iter += memory_map.descriptor_size)
+    {
+        auto desc = reinterpret_cast<MemoryDescriptor *>(iter);
+        for (int i = 0; i < available_memory_types.size(); i++)
+        {
+            if (desc->type == available_memory_types[i])
+            {
+                printk("type = %u, phys = %08lx - %08lx, pages = %lu, attr  = %08lx\n",
+                       desc->type,
+                       desc->phsical_start,
+                       desc->phsical_start + desc->number_of_pages * 4096 - 1,
+                       desc->number_of_pages,
+                       desc->attribute);
+            }
+        }
+    }
 
     mouse_cursor = new (mouse_cursor_buf) MouseCursor{
         pixel_writer,

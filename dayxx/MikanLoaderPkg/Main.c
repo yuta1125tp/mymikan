@@ -11,17 +11,8 @@
 #include <Protocol/BlockIo.h>
 #include <Guid/FileInfo.h>
 #include "frame_buffer_config.hpp"
+#include "memory_map.hpp"
 #include "elf.hpp"
-
-struct MemoryMap
-{
-    UINTN buffer_size;
-    VOID *buffer;
-    UINTN map_size;
-    UINTN map_key;
-    UINTN descriptor_size;
-    UINT32 descriptor_version;
-};
 
 EFI_STATUS GetMemoryMap(struct MemoryMap *map)
 {
@@ -460,9 +451,13 @@ EFI_STATUS EFIAPI UefiMain(EFI_HANDLE image_handle,
         Halt();
     }
 
-    typedef void EntryPointType(const struct FrameBufferConfig *);
+    // 関数定義のメモリ上の位置情報だけでは、C言語の関数として呼ぶのに十分ではなく、さらに引数と戻り値の型情報（関数プロトタイプ）が必要[ref](みかん本79p)
+    // 指定の引数を持つ関数を表す型EntryPointTypeを定義して、取得した関数の先頭アドレスをキャスト。
+    typedef void EntryPointType(
+        const struct FrameBufferConfig *,
+        const struct MemoryMap *);
     EntryPointType *entry_point = (EntryPointType *)entry_addr; // 関数としてキャスト
-    entry_point(&config);
+    entry_point(&config, &memmap);
 #pragma endregion call_kernal
 
     Print(L"All done\n");
