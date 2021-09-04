@@ -86,7 +86,7 @@ namespace pci
     /** @brief 単一ファンクションの場合に真を返す． */
     bool IsSingleFunctionDevice(uint8_t header_type);
 
-    // グローバル変数をヘッダファイルで定義する際はinlineを使ってインライン変数とする。[ref](みかん本@147p)
+    // グローバル変数をヘッダファイルで定義する際はinlineを使ってインライン変数とする。[ref](みかん本の147p)
     /** @brief ScanAllBus() により発見された PCI デバイスの一覧 */
     inline std::array<Device, 32> devices;
     /** @brief devices の有効な要素の数 */

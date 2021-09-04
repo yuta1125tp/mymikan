@@ -230,28 +230,28 @@ namespace pci
     {
         // CONFIG_ADDRESSレジスタに読み書きしたいPCIコンフィグレーション空間の位置を設定してから
         // CONFIG_DATAを読み書きすることでPCIコンフィグレーション空間を読み書きすることができる。
-        // PCIコンフィギュレーション空間の先頭から16bitがVendorID[ref](図6.3みかん本@142)
+        // PCIコンフィギュレーション空間の先頭から16bitがVendorID[ref](図6.3みかん本の142)
         WriteAddress(MakeAddress(bus, device, function, 0x00));
         return ReadData() & 0xffffu;
     }
 
     uint16_t ReadDeviceId(uint8_t bus, uint8_t device, uint8_t function)
     {
-        // PCIコンフィギュレーション空間の先頭から32bit読んで、上16bit分がDeviceId[ref](図6.3みかん本@142)
+        // PCIコンフィギュレーション空間の先頭から32bit読んで、上16bit分がDeviceId[ref](図6.3みかん本の142)
         WriteAddress(MakeAddress(bus, device, function, 0x00));
         return ReadData() >> 16;
     }
 
     uint8_t ReadHeaderType(uint8_t bus, uint8_t device, uint8_t function)
     {
-        // PCIコンフィギュレーション空間の0x0Cから32bit読んで、上16bitがHeaderType[ref](図6.3みかん本@142)
+        // PCIコンフィギュレーション空間の0x0Cから32bit読んで、上16bitがHeaderType[ref](図6.3みかん本の142)
         WriteAddress(MakeAddress(bus, device, function, 0x0c));
         return (ReadData() >> 16) & 0xffu;
     }
 
     ClassCode ReadClassCode(uint8_t bus, uint8_t device, uint8_t function)
     {
-        // PCIコンフィギュレーション空間の0x08から32bit読んで、上16bitの上8bitがBaseClass, 下8bitがSub Class[ref](図6.3みかん本@142)
+        // PCIコンフィギュレーション空間の0x08から32bit読んで、上16bitの上8bitがBaseClass, 下8bitがSub Class[ref](図6.3みかん本の142)
         WriteAddress(MakeAddress(bus, device, function, 0x08));
         auto reg = ReadData();
         ClassCode cc;
@@ -275,7 +275,7 @@ namespace pci
     Error ScanAllBus()
     {
         num_device = 0;
-        // バス0上のデバイス0は必ずホストブリッジ（ホスト側とPCIバス側を橋渡しする部品でCPUとPCIデバイスの間の通信はここを必ず通過する。[ref](みかん本@147p)）
+        // バス0上のデバイス0は必ずホストブリッジ（ホスト側とPCIバス側を橋渡しする部品でCPUとPCIデバイスの間の通信はここを必ず通過する。[ref](みかん本の147p)）
         auto header_type = ReadHeaderType(0, 0, 0);
 
         // 単機能デバイスの場合はホストブリッジがバス0を担当するホストブリッジ。

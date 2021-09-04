@@ -33,7 +33,7 @@
 
 // #pragma region 配置new
 // // /**
-// //  * @brief 配置newの実装、include<new>でもOK、[ref](みかん本@105p)
+// //  * @brief 配置newの実装、include<new>でもOK、[ref](みかん本の105p)
 // //  *
 // //  * @param size
 // //  * @param buf
@@ -60,7 +60,7 @@ char console_buf[sizeof(Console)];
 Console *console;
 
 /**
- * @brief カーネル内部からメッセージを出す関数[ref](みかん本@132p)
+ * @brief カーネル内部からメッセージを出す関数[ref](みかん本の132p)
  * 
  * @param format 
  * @param ... 
@@ -152,7 +152,7 @@ __attribute__((interrupt)) void IntHandlerXHCI(InterruptFrame *frame)
 }
 #pragma endregion
 
-// 新しいスタック領域（UEFI管理ではなく、OS管理の領域、[ref](みかん本@186p)）
+// 新しいスタック領域（UEFI管理ではなく、OS管理の領域、[ref](みかん本の186p)）
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
 /**
@@ -237,6 +237,7 @@ extern "C" void KernelMainNewStack(
         auto desc = reinterpret_cast<const MemoryDescriptor *>(iter);
         if (available_end < desc->phsical_start)
         {
+            //歯抜けになっている場合
             memory_manager->MarkAllocated(
                 FrameID{available_end / kBytesPerFrame},
                 (desc->phsical_start - available_end) / kBytesPerFrame);
@@ -256,12 +257,19 @@ extern "C" void KernelMainNewStack(
         }
         else
         {
+            // IsAvailable()が偽の場合
+
+            // desc->number_of_pagesはUEFI企画のページサイズを基準としたページ数
+            // これがメモリマネージャが管理対象とするページフレームのサイズと一致するとは限らない
+            // kUEFIPageSizeで掛けてバイト単位にして、kBytesPerFrameでメモリマネージャのページフレーム単位に読み替える。
+            // [ref](みかん本の201p脚注14)
             memory_manager->MarkAllocated(
                 FrameID{desc->phsical_start / kBytesPerFrame},
                 desc->number_of_pages * kUEFIPageSize / kBytesPerFrame);
         }
     }
 
+    // 使用中のメモリをマーキングした後、物理メモリの大きさを設定する
     memory_manager->SetMemoryRange(FrameID{1}, FrameID{available_end / kBytesPerFrame});
 
     mouse_cursor = new (mouse_cursor_buf) MouseCursor{

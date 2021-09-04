@@ -12,7 +12,7 @@
 #include "x86_descriptor.hpp"
 
 /**
- * @brief [ref](みかん本@190p)
+ * @brief [ref](みかん本の190p)
  * 
  */
 union SegmentDescriptor

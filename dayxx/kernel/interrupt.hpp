@@ -12,7 +12,7 @@
 #include "x86_descriptor.hpp"
 
 /**
- * @brief 割り込み記述子の属性[ref](みかん本@166p)
+ * @brief 割り込み記述子の属性[ref](みかん本の166p)
  * __attribute__((packed))を指定すると、変数アライメントを守るためのpaddingが抑制されて
  * 構造体の各フィールドをメモリ上で詰めて配置できる。
  */
@@ -45,7 +45,7 @@ struct InterruptDescriptor
     uint32_t reserved;
 } __attribute__((packed));
 
-// IDT(割り込み記述子テーブル, Interrupt Descriptor Table)[ref](みかん本@165p)
+// IDT(割り込み記述子テーブル, Interrupt Descriptor Table)[ref](みかん本の165p)
 extern std::array<InterruptDescriptor, 256> idt;
 
 constexpr InterruptDescriptorAttribute MakeIDTAttr(

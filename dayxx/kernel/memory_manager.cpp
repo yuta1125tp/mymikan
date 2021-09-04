@@ -5,6 +5,12 @@ BitmapMemoryManager::BitmapMemoryManager()
 {
 }
 
+/**
+ * @brief FirstFitアルゴリズムでメモリを割り当てる[ref](みかん本203p)
+ * 
+ * @param num_frames 
+ * @return WithError<FrameID> 
+ */
 WithError<FrameID> BitmapMemoryManager::Allocate(size_t num_frames)
 {
     size_t start_frame_id = range_begin_.ID();
@@ -20,13 +26,14 @@ WithError<FrameID> BitmapMemoryManager::Allocate(size_t num_frames)
 
             if (GetBit(FrameID{start_frame_id + i}))
             {
-                // start_frame_id+iにあるフレームは割り当て済み
+                // GetBitが真=指定位置（start_frame_id+i）にあるフレームは割り当て済み
                 break;
             }
         }
 
         if (i == num_frames)
         {
+            // 上のforループが最後まで回るとここに入る。breakで終わらない場合＝連続した空き領域があった場合
             // num_frames分の空きが見つかった
             MarkAllocated(FrameID{start_frame_id}, num_frames);
             return {
@@ -39,6 +46,16 @@ WithError<FrameID> BitmapMemoryManager::Allocate(size_t num_frames)
     }
 }
 
+/**
+ * @brief メモリ領域を返却する
+ * 
+ * free()はポインタ（領域の先頭アドレス）だけでよいが、BitmapMemoryManagerはサイズも合わせて要求する。
+ * 確保時にサイズを覚えておくのが面倒だっただけらしい。 [ref](みかん本204p) TODO
+ * 
+ * @param start_frame 
+ * @param num_frames 
+ * @return Error 
+ */
 Error BitmapMemoryManager::Free(FrameID start_frame, size_t num_frames)
 {
     for (size_t i = 0; i < num_frames; i++)
@@ -64,6 +81,7 @@ void BitmapMemoryManager::SetMemoryRange(FrameID range_begin, FrameID range_end)
 
 bool BitmapMemoryManager::GetBit(FrameID frame) const
 {
+    // kBitsPerMapLineを横幅と考え、line_indexは行数、bit_indexは列数の2次元行列と思うとイメージしやすい？
     auto line_index = frame.ID() / kBitsPerMapLine;
     auto bit_index = frame.ID() % kBitsPerMapLine;
 

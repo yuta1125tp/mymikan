@@ -33,6 +33,12 @@ namespace
  */
 static const auto kBytesPerFrame{4_KiB};
 
+/**
+ * @brief ページフレーム番号を表す型
+ * 
+ * 内部にsize_t型の変数を持つだけだが混乱を防ぐためクラスでラップしてある[ref](みかん本の199p)
+ * 
+ */
 class FrameID
 {
 public:
@@ -49,8 +55,9 @@ static const FrameID kNullFrame{std::numeric_limits<size_t>::max()};
 /**
  * @brief ビットマップ配列を用いてフレーム単位でメモリ管理するクラス
  * 
- * 1bitを1フレームに対応させて、ビットマップにより秋フレームを管理する。配列allocate_mapの各ビットがフレームに対応し、0なら空き、1なら使用中
- * alloc_map[n]のmびっと目が対応する物理アドレスは以下の式でも止まる。
+ * 1bitを1フレームに対応させて、ビットマップにより秋フレームを管理する。
+ * 配列allocate_mapの各ビットがフレームに対応し、0なら空き、1なら使用中
+ * alloc_map[n]のmビット目が対応する物理アドレスは以下の式でも止まる。
  *   kFrameBytes * (n * kBitPerMapLine + m);
  * 
  */

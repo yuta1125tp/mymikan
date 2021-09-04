@@ -36,7 +36,7 @@ void SetupIdentityPageTable()
         for (int i_pd = 0; i_pd < 512; i_pd++)
         {
             // ページディレクトリの各要素を設定
-            // | 0x083のビット和により、各要素のbit7を1にできて、2MiBページになる（？みかん本@197p）
+            // | 0x083のビット和により、各要素のbit7を1にできて、2MiBページになる（？みかん本の197p）
             page_directory[i_pdpt][i_pd] = i_pdpt * kPageSize1G + i_pd * kPageSize2M | 0x083;
         }
     }

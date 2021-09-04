@@ -17,7 +17,7 @@ global IoIn32 ; uint 32_t IoIn32(uint16_t addr);
 IoIn32:
     mov dx, di; dx=addr
     in eax, dx; DXに設定されたIOポートアドレスから32bit整数を入力してEAXに設定する。
-    ret; RAXレジスタの値が戻り値になる。RAXの下32bitがEAX[ref](みかん本図3.2@71p)なので、RAXを返せばEAXを64bitで返すことに相当、上32bitの初期値は気にしなくて良い？
+    ret; RAXレジスタの値が戻り値になる。RAXの下32bitがEAX[ref](みかん本図3.2の71p)なので、RAXを返せばEAXを64bitで返すことに相当、上32bitの初期値は気にしなくて良い？
 
 global GetCS;uint16_t GetCS(void);
 GetCS:
@@ -64,7 +64,7 @@ SetCSSS:; Code Segmentレジスタ(CS) Stack Segmentレジスタ(SS)に値を設
     ret
 
 global SetDSAll; void SetDSAll(uint16_t value);
-SetDSAll: ; 各セグメントレジスタ(ds, es, fs, gs)に引数の値(0)をコピー。ヌルディスクリプタを指すようにするのが目的（みかん本@193p）
+SetDSAll: ; 各セグメントレジスタ(ds, es, fs, gs)に引数の値(0)をコピー。ヌルディスクリプタを指すようにするのが目的（みかん本の193p）
     mov ds, di
     mov es, di
     mov fs, di
