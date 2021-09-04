@@ -27,6 +27,8 @@
 #include "interrupt.hpp"
 #include "asmfunc.h"
 #include "queue.hpp"
+#include "segment.hpp"
+#include "paging.hpp"
 
 // #pragma region 配置new
 // // /**
@@ -145,14 +147,21 @@ __attribute__((interrupt)) void IntHandlerXHCI(InterruptFrame *frame)
 }
 #pragma endregion
 
+// 新しいスタック領域（UEFI管理ではなく、OS管理の領域、[ref](みかん本@186p)）
+alignas(16) uint8_t kernel_main_stack[1024 * 1024];
+
 /**
  * @brief カーネル関数
  * 
  */
-extern "C" void KernelMain(
-    const FrameBufferConfig &frame_buffer_config,
-    const MemoryMap &memory_map)
+extern "C" void KernelMainNewStack(
+    const FrameBufferConfig &frame_buffer_config_ref,
+    const MemoryMap &memory_map_ref)
 {
+    // UEFI管理のスタック領域の情報をOS管理の管理の新しいスタック領域へコピーする
+    FrameBufferConfig frame_buffer_config{frame_buffer_config_ref};
+    MemoryMap memory_map{memory_map_ref};
+
     switch (frame_buffer_config.pixel_format)
     {
     case kPixelRGBResv8BitPerColor:
@@ -202,29 +211,29 @@ extern "C" void KernelMain(
     printk("Welcome to MikanOS!!\n");
     SetLogLevel(kWarn);
 
-    const std::array available_memory_types{
-        MemoryType::kEfiBootServicesCode,
-        MemoryType::kEfiBootServicesData,
-        MemoryType::kEfiConventionalMemory,
-    };
+    SetupSegments();
+    const uint16_t kernel_cs = 1 << 3; // Code Segmentレジスタ(CS)はgdt[1]を指す
+    const uint16_t kernel_ss = 2 << 3; // Stack Segmentレジスタ(SS)はgdt[2]を指す
+    SetDSAll(0);
+    SetCSSS(kernel_cs, kernel_ss);
+
+    SetupIdentityPageTable();
 
     printk("memory_map: %p\n", &memory_map);
-    for (uintptr_t iter = reinterpret_cast<uintptr_t>(memory_map.buffer);
-         iter < reinterpret_cast<uintptr_t>(memory_map.buffer) + memory_map.map_size;
+    const auto memory_map_base = reinterpret_cast<uintptr_t>(memory_map.buffer);
+    for (uintptr_t iter = memory_map_base;
+         iter < memory_map_base + memory_map.map_size;
          iter += memory_map.descriptor_size)
     {
         auto desc = reinterpret_cast<MemoryDescriptor *>(iter);
-        for (int i = 0; i < available_memory_types.size(); i++)
+        if (IsAvailable(static_cast<MemoryType>(desc->type)))
         {
-            if (desc->type == available_memory_types[i])
-            {
-                printk("type = %u, phys = %08lx - %08lx, pages = %lu, attr  = %08lx\n",
-                       desc->type,
-                       desc->phsical_start,
-                       desc->phsical_start + desc->number_of_pages * 4096 - 1,
-                       desc->number_of_pages,
-                       desc->attribute);
-            }
+            printk("type = %u, phys = %08lx - %08lx, pages = %lu, attr  = %08lx\n",
+                   desc->type,
+                   desc->phsical_start,
+                   desc->phsical_start + desc->number_of_pages * 4096 - 1,
+                   desc->number_of_pages,
+                   desc->attribute);
         }
     }
 
@@ -277,12 +286,12 @@ extern "C" void KernelMain(
             xhc_dev->bus, xhc_dev->device, xhc_dev->function);
     }
 
-    const uint16_t cs = GetCS(); // 現在のコードセグメントセレクタの値を取得
+    // const uint16_t cs = GetCS(); // 現在のコードセグメントセレクタの値を取得
     SetIDTEntry(
         idt[InterruptVector::kXHCI],
         MakeIDTAttr(DescriptorType::kInterruptGate, 0),
         reinterpret_cast<uint64_t>(IntHandlerXHCI),
-        cs);
+        kernel_cs);
     LoadIDT(sizeof(idt) - 1, reinterpret_cast<uintptr_t>(&idt[0]));
 
     // 0xfee00020番地のびっと31:24を読むことでプログラムが動作しているコアのLocal APIC IDを取得

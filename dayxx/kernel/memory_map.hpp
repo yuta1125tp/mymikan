@@ -53,4 +53,21 @@ inline bool operator==(MemoryType lhs, uint32_t rhs)
     return rhs == lhs;
 }
 
+/**
+ * @brief 指定されたメモリタイプが空き領域か判定する
+ * UEFIを抜けた後空き領域として扱って良いことになっているメモリタイプか確認
+ * 
+ * @param memory_type 
+ * @return true ：空き領域
+ * @return false ：非空き領域
+ */
+inline bool IsAvailable(MemoryType memory_type)
+{
+    return memory_type == MemoryType::kEfiBootServicesCode ||
+           memory_type == MemoryType::kEfiBootServicesData ||
+           memory_type == MemoryType::kEfiConventionalMemory;
+}
+
+const int kUEFIPageSize = 4096;
+
 #endif
