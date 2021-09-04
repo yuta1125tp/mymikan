@@ -29,6 +29,7 @@
 #include "queue.hpp"
 #include "segment.hpp"
 #include "paging.hpp"
+#include "memory_manager.hpp"
 
 // #pragma region 配置new
 // // /**
@@ -78,6 +79,10 @@ int printk(const char *format, ...)
     console->PutString(s);
     return result;
 }
+
+// メモリマネージャ関連
+char memory_manager_buf[sizeof(BitmapMemoryManager)];
+BitmapMemoryManager *memory_manager;
 
 #pragma region // マウスカーソル
 char mouse_cursor_buf[sizeof(MouseCursor)];
@@ -219,15 +224,29 @@ extern "C" void KernelMainNewStack(
 
     SetupIdentityPageTable();
 
+    printk("setup memory manager\n");
+    ::memory_manager = new (memory_manager_buf) BitmapMemoryManager;
+
     printk("memory_map: %p\n", &memory_map);
     const auto memory_map_base = reinterpret_cast<uintptr_t>(memory_map.buffer);
+    uintptr_t available_end = 0;
     for (uintptr_t iter = memory_map_base;
          iter < memory_map_base + memory_map.map_size;
          iter += memory_map.descriptor_size)
     {
-        auto desc = reinterpret_cast<MemoryDescriptor *>(iter);
+        auto desc = reinterpret_cast<const MemoryDescriptor *>(iter);
+        if (available_end < desc->phsical_start)
+        {
+            memory_manager->MarkAllocated(
+                FrameID{available_end / kBytesPerFrame},
+                (desc->phsical_start - available_end) / kBytesPerFrame);
+        }
+
+        const auto physical_end = desc->phsical_start + desc->number_of_pages * kUEFIPageSize;
+
         if (IsAvailable(static_cast<MemoryType>(desc->type)))
         {
+            available_end = physical_end;
             printk("type = %u, phys = %08lx - %08lx, pages = %lu, attr  = %08lx\n",
                    desc->type,
                    desc->phsical_start,
@@ -235,7 +254,15 @@ extern "C" void KernelMainNewStack(
                    desc->number_of_pages,
                    desc->attribute);
         }
+        else
+        {
+            memory_manager->MarkAllocated(
+                FrameID{desc->phsical_start / kBytesPerFrame},
+                desc->number_of_pages * kUEFIPageSize / kBytesPerFrame);
+        }
     }
+
+    memory_manager->SetMemoryRange(FrameID{1}, FrameID{available_end / kBytesPerFrame});
 
     mouse_cursor = new (mouse_cursor_buf) MouseCursor{
         pixel_writer,
