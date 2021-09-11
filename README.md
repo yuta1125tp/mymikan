@@ -14,21 +14,33 @@ GitLensを使うと便利。
 で2つのコミット（タグ）を指定することで差分を表示できる。
 選択順序は新しい方（右に表示）、古い方（左に表示）の順番がよいかも
 
+## day08cで追加されるtestに関して
+`#include <CppUTest/CommandLineTestRunner.h>`は[CppUTest](git://github.com/cpputest/cpputest.git)のヘッダかも？
+```bash
+sudo apt install g++ build-essential git cmake
+git clone git://github.com/cpputest/cpputest.git
+cd cpputest/cpputest_build
+cmake ..
+make
+sudo make install
+```
+
+
 
 ## kernelのコンパイル
 ```bash
 # cコンパイラなど開発環境を読み込む
-source $HOME/osbook/devenv/buildenv.sh
-cd /home/yshira/Work/os/mymikanos/day04/kernel
+source ${HOME}/osbook/devenv/buildenv.sh
+cd /home/yshira/Work/os/mymikanos/dayxx/kernel
 make
 ```
 
 ## QEMUで動作確認する際の手順
 ```bash
 # 移動
-cd $HOME/edk2
+cd ${HOME}/edk2
 # シンボリックリンクを貼る
-ln -s /home/yshira/Work/os/mymikanos/day03/MikanLoaderPkg ./
+ln -s /home/yshira/Work/os/mymikanos/dayxx/MikanLoaderPkg ./
 # edk2に関する開発環境を読み込む
 source edksetup.sh
 # edk2のbuildコマンドでpythonが見つからない場合->特定のpythonを指定してやる。
@@ -36,8 +48,8 @@ PYTHON_COMMAND=python3 build
 
 # 予めWindows側でXlaunchを実行しておく。
 
-# ビルド結果を読み込んで動作確認（day03aの時点の引数）
-$HOME/osbook/devenv/run_qemu.sh Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi ${HOME}/Work/os/mymikanos/dayxx/kernel/kernel.elf
+# ビルド結果を読み込んで動作確認（dayxxaの時点の引数）
+${HOME}/osbook/devenv/run_qemu.sh Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi ${HOME}/Work/os/mymikanos/dayxx/kernel/kernel.elf
 ```
 
 ## efiを指定してwslからqemuを起動

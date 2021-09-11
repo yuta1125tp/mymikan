@@ -15,6 +15,9 @@
         "__functional_03": "cpp",
         "functional": "cpp",
         "array": "cpp",
-        "memory.hpp": "c"
+        "memory.hpp": "c",
+        "optional": "cpp",
+        "*.tcc": "cpp",
+        "__node_handle": "cpp"
     }
 }
