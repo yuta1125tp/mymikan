@@ -32,6 +32,7 @@
 #include "memory_manager.hpp"
 #include "window.hpp"
 #include "layer.hpp"
+#include "timer.hpp"
 
 // #pragma region 配置new
 // // /**
@@ -93,7 +94,12 @@ void MouseObserver(
 {
     // Log(kDebug, "MouseObserver %d, %d\n", displacement_x, displacement_y);
     layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
+
+    StartLAPICTimer();
     layer_manager->Draw();
+    auto elapsed = LAPICTimerElapsed();
+    StopLAPICTimer();
+    printk("MouseObserver: elapsed = %u\n", elapsed);
 }
 #pragma endregion
 
@@ -192,6 +198,8 @@ extern "C" void KernelMainNewStack(
 
     printk("Welcome to MikanOS!!\n");
     SetLogLevel(kWarn);
+
+    InitializeLAPICTimer();
 
     SetupSegments();
     const uint16_t kernel_cs = 1 << 3; // Code Segmentレジスタ(CS)はgdt[1]を指す
