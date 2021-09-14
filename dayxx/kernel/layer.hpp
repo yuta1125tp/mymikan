@@ -38,6 +38,10 @@ public:
     std::shared_ptr<Window> GetWindow() const;
     /**　@brief レイヤの原点座標を取得する */
     Vector2D<int> GetPosition() const;
+    /** @brief レイヤのドラッグ可否のフラグを操作、tureならドラッグ可能レイヤ、コンストラクタではfalseで初期化済み*/
+    Layer &SetDraggable(bool draggable);
+    /** @brief レイヤのドラッグ可否のフラグを返す*/
+    bool IsDraggable() const;
 
     /**　@brief レイヤの位置情報を指定した絶対座標へ更新する。再描画はしない */
     Layer &Move(Vector2D<int> pos);
@@ -53,8 +57,9 @@ public:
 
 private:
     unsigned int id_;
-    Vector2D<int> pos_;
-    std::shared_ptr<Window> window_;
+    Vector2D<int> pos_{};
+    std::shared_ptr<Window> window_{};
+    bool draggable_{false};
 };
 
 /**

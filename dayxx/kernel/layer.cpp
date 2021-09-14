@@ -13,6 +13,12 @@ Layer &Layer::SetWindow(const std::shared_ptr<Window> &window)
 
 std::shared_ptr<Window> Layer::GetWindow() const { return window_; }
 Vector2D<int> Layer::GetPosition() const { return pos_; }
+Layer &Layer::SetDraggable(bool draggable)
+{
+    draggable_ = draggable;
+    return *this;
+}
+bool Layer::IsDraggable() const { return draggable_; }
 
 Layer &Layer::Move(Vector2D<int> pos)
 {
@@ -162,6 +168,7 @@ Layer *LayerManager::FindLayerByPosition(Vector2D<int> pos, unsigned int exclude
         return win_pos.x <= pos.x && pos.x < win_end_pos.x && win_pos.y <= pos.y && pos.y < win_end_pos.y;
     };
 
+    // rbegin(), rend()で逆方向（画面手前から奥）に走査、最初にクリックが当たる最前面のレイヤを探す。
     auto it = std::find_if(layer_stack_.rbegin(), layer_stack_.rend(), pred);
     if (it == layer_stack_.rend())
     {
