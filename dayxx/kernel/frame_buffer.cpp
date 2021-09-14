@@ -97,6 +97,7 @@ Error FrameBuffer::Copy(Vector2D<int> dst_pos, const FrameBuffer &src, const Rec
     const Rectangle<int> src_outline{dst_pos - src_area.pos, FrameBufferSize(src.config_)};
     const Rectangle<int> dst_outline{{0, 0}, FrameBufferSize(config_)};
 
+    // みかん本図10.5
     const auto copy_area = dst_outline & src_outline & src_area_shifted;
     const auto src_start_pos = copy_area.pos - (dst_pos - src_area.pos);
 
