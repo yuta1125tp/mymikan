@@ -387,8 +387,6 @@ extern "C" void KernelMainNewStack(
 
     auto main_window = std::make_shared<Window>(160, 68, frame_buffer_config.pixel_format);
     DrawWindow(*main_window->Writer(), "Hello Window");
-    WriteString(*main_window->Writer(), {24, 28}, "Welcome to", {0, 0, 0});
-    WriteString(*main_window->Writer(), {24, 44}, "MikanOS World!!", {0, 0, 0});
 
     FrameBuffer screen;
     if (auto err = screen.Initialize(frame_buffer_config))
@@ -410,11 +408,21 @@ extern "C" void KernelMainNewStack(
     layer_manager->UpDown(main_window_layer_id, 1);
     layer_manager->Draw();
 
+    char str[128];
+    unsigned int count = 0;
+
     Log(kInfo, "start event loop.\n");
     // イベントループ
     // キューに溜まったイベントを処理し続ける
     while (1)
     {
+
+        ++count;
+        sprintf(str, "%010u", count);
+        FillRectangle(*main_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
+        WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
+        layer_manager->Draw();
+
         // cli(Clear Interrupt Flag)命令はCPUの割り込みフラグ（IF, Interrupt Flag）を0にする命令。
         // IFはCPU内のRFLAGSレジスタにあるフラグ。
         // IFが0のときCPUは外部割り込みを受け取らなくなる。
@@ -425,7 +433,8 @@ extern "C" void KernelMainNewStack(
             // FIを1にしたあとすぐにhltに入る。
             // sti命令と直後の1命令の間では割り込みが起きない仕様を利用するため、
             // インラインアセンブラで複数命令を並べて実行している。[ref](みかん本180p脚注)
-            __asm__("sti\n\thlt");
+            // __asm__("sti\n\thlt");
+            __asm__("sti");
             continue;
         }
 
