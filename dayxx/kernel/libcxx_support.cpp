@@ -7,10 +7,16 @@
 #include <new>
 #include <cerrno>
 
-// add at day06c
+int printk(const char *format, ...);
+
+// add at day06c modi at day09b
 std::new_handler std::get_new_handler() noexcept
 {
-    return nullptr;
+    return []
+    {
+        printk("not enough memory\n");
+        exit(1);
+    };
 }
 
 // add at day06c

@@ -13,4 +13,8 @@
 # winmerge
 *.bak
 
+tmp.cpp
+tmp.hpp
 tmp
+
+test

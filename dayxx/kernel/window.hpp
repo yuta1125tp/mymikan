@@ -10,6 +10,7 @@
 #include <optional>
 
 #include "graphics.hpp"
+#include "frame_buffer.hpp"
 
 /**
  * @brief Windowクラスはグラフィックの表示領域を表す。
@@ -35,9 +36,9 @@ public:
          * @param y 
          * @param c 
          */
-        virtual void Write(int x, int y, const PixelColor &c) override
+        virtual void Write(Vector2D<int> pos, const PixelColor &c) override
         {
-            window_.At(x, y) = c;
+            window_.Write(pos, c);
         }
 
         /**
@@ -58,23 +59,25 @@ public:
     };
 
     /**
-     * @brief Construct a new Window object with given size
+     * @brief 指定されたピクセル数の平面描画領域とシャドウバッファを作成する
+     * シャドウバッファに関してはみかん本232p
      * 
-     * @param width 
-     * @param height 
+     *@param width
+     *@param height
+     *@param shadow_format
      */
-    Window(int width, int height);
+    Window(int width, int height, PixelFormat shadow_format);
     ~Window() = default;
     Window(const Window &rhs) = delete;
     Window &operator=(const Window &rhs) = delete;
 
     /**
-     * @brief 与えられたPixelWriterにこのウインドウの領域を描画する
+     * @brief 与えられたFrameBufferにこのウインドウの領域を描画する
      * 
-     * @param witer 
+     * @param dst 描画先
      * @param position 
      */
-    void DrawTo(PixelWriter &witer, Vector2D<int> position);
+    void DrawTo(FrameBuffer &dst, Vector2D<int> position);
     /**
      * @brief 透過色を設定する。
      * 
@@ -93,15 +96,15 @@ public:
      * @param y 
      * @return const PixelColor& 
      */
-    PixelColor &At(int x, int y);
+    const PixelColor &At(Vector2D<int> pos) const;
+
     /**
-     * @brief 指定した位置のピクセルを返す。
+     * @brief 指定した位置にピクセルを書き込む
      * 
-     * @param x 
-     * @param y 
-     * @return const PixelColor& 
+     * @param pos 
+     * @param c 
      */
-    const PixelColor &At(int x, int y) const;
+    void Write(Vector2D<int> pos, PixelColor c);
 
     /**
      * @brief 平面描画領域の幅をピクセル単位で返す
@@ -122,4 +125,7 @@ private:
     // windowインスタンスのポインタがwriter_のコンストラクタに渡る。[みかん本の213pと図9.7]
     WindowWriter writer_{*this};
     std::optional<PixelColor> transparent_color_{std::nullopt};
+
+    // 重ね合わせ処理の高速化のためのシャドウバッファ(VRAM)
+    FrameBuffer shadow_buffer_{};
 };

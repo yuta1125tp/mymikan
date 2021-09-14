@@ -18,6 +18,10 @@
         "memory.hpp": "c",
         "optional": "cpp",
         "*.tcc": "cpp",
-        "__node_handle": "cpp"
+        "__node_handle": "cpp",
+        "algorithm": "cpp",
+        "__split_buffer": "cpp",
+        "vector": "cpp",
+        "sstream": "cpp"
     }
 }

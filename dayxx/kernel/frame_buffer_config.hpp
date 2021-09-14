@@ -10,6 +10,10 @@ enum PixelFormat
     // kPixelBltOnly,
 };
 
+/**
+ * @brief 描画領域の縦横サイズピクセルのデータ形式など描画領域に関する構成情報を保持する
+ * 
+ */
 struct FrameBufferConfig
 {
     uint8_t *frame_buffer;

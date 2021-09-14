@@ -40,22 +40,19 @@ void DrawMouseCursor(PixelWriter *pixel_writer, Vector2D<int> position)
             if (mouse_cursor_shape[dy][dx] == '@')
             {
                 pixel_writer->Write(
-                    position.x + dx,
-                    position.y + dy,
+                    position + Vector2D<int>{dx, dy},
                     {0, 0, 0});
             }
             else if (mouse_cursor_shape[dy][dx] == '.')
             {
                 pixel_writer->Write(
-                    position.x + dx,
-                    position.y + dy,
+                    position + Vector2D<int>{dx, dy},
                     {255, 255, 255});
             }
             else
             {
                 pixel_writer->Write(
-                    position.x + dx,
-                    position.y + dy,
+                    position + Vector2D<int>{dx, dy},
                     kMouseTransparentColor);
             }
         }

@@ -197,7 +197,7 @@ extern "C" void KernelMainNewStack(
     console->SetWriter(pixel_writer);
 
     printk("Welcome to MikanOS!!\n");
-    SetLogLevel(kWarn);
+    SetLogLevel(kInfo);
 
     InitializeLAPICTimer();
 
@@ -220,23 +220,23 @@ extern "C" void KernelMainNewStack(
          iter += memory_map.descriptor_size)
     {
         auto desc = reinterpret_cast<const MemoryDescriptor *>(iter);
-        if (available_end < desc->phsical_start)
+        if (available_end < desc->physical_start)
         {
             //歯抜けになっている場合
             memory_manager->MarkAllocated(
                 FrameID{available_end / kBytesPerFrame},
-                (desc->phsical_start - available_end) / kBytesPerFrame);
+                (desc->physical_start - available_end) / kBytesPerFrame);
         }
 
-        const auto physical_end = desc->phsical_start + desc->number_of_pages * kUEFIPageSize;
+        const auto physical_end = desc->physical_start + desc->number_of_pages * kUEFIPageSize;
 
         if (IsAvailable(static_cast<MemoryType>(desc->type)))
         {
             available_end = physical_end;
             printk("type = %u, phys = %08lx - %08lx, pages = %lu, attr  = %08lx\n",
                    desc->type,
-                   desc->phsical_start,
-                   desc->phsical_start + desc->number_of_pages * 4096 - 1,
+                   desc->physical_start,
+                   desc->physical_start + desc->number_of_pages * 4096 - 1,
                    desc->number_of_pages,
                    desc->attribute);
         }
@@ -249,7 +249,7 @@ extern "C" void KernelMainNewStack(
             // kUEFIPageSizeで掛けてバイト単位にして、kBytesPerFrameでメモリマネージャのページフレーム単位に読み替える。
             // [ref](みかん本の201p脚注14)
             memory_manager->MarkAllocated(
-                FrameID{desc->phsical_start / kBytesPerFrame},
+                FrameID{desc->physical_start / kBytesPerFrame},
                 desc->number_of_pages * kUEFIPageSize / kBytesPerFrame);
         }
     }
@@ -375,18 +375,27 @@ extern "C" void KernelMainNewStack(
     const int kFrameWidth = frame_buffer_config.horizontal_resolution;
     const int kFrameHeight = frame_buffer_config.vertical_resolution;
 
-    auto bgwindow = std::make_shared<Window>(kFrameWidth, kFrameHeight);
+    Log(kInfo, "prepare bgwindow\n");
+    auto bgwindow = std::make_shared<Window>(kFrameWidth, kFrameHeight, frame_buffer_config.pixel_format);
     auto bgwriter = bgwindow->Writer();
-
     DrawDesktop(*bgwriter);
     console->SetWriter(bgwriter);
 
-    auto mouse_window = std::make_shared<Window>(kMouseCursorWidth, kMouseCursorHeight);
+    Log(kInfo, "prepare mouse_window\n");
+    auto mouse_window = std::make_shared<Window>(kMouseCursorWidth, kMouseCursorHeight, frame_buffer_config.pixel_format);
     mouse_window->SetTransparentColor(kMouseTransparentColor);
     DrawMouseCursor(mouse_window->Writer(), {0, 0});
 
+    FrameBuffer screen;
+    if (auto err = screen.Initialize(frame_buffer_config))
+    {
+        Log(kError, "failed to initialize frame buffer: %s at %s: %d\n",
+            err.Name(), err.File(), err.Line());
+    }
+
+    Log(kInfo, "Wake up LayerManaer\n");
     layer_manager = new LayerManager;
-    layer_manager->SetWriter(pixel_writer);
+    layer_manager->SetWriter(&screen);
 
     auto bglayer_id = layer_manager->NewLayer().SetWindow(bgwindow).Move({0, 0}).ID();
     mouse_layer_id = layer_manager->NewLayer().SetWindow(mouse_window).Move({200, 200}).ID();

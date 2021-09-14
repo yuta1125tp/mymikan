@@ -33,7 +33,7 @@ public:
      * 
      * @param writer 
      */
-    void DrawTo(PixelWriter &writer) const;
+    void DrawTo(FrameBuffer &screen) const;
 
 private:
     unsigned int id_;
@@ -53,7 +53,7 @@ public:
      * 
      * @param writer 
      */
-    void SetWriter(PixelWriter *writer);
+    void SetWriter(FrameBuffer *screen);
 
     /**
      * @brief 新しいレイヤを生成して参照を返す。
@@ -101,7 +101,7 @@ public:
     void Hide(unsigned int id);
 
 private:
-    PixelWriter *writer_{nullptr};
+    FrameBuffer *screen_{nullptr};
     std::vector<std::unique_ptr<Layer>> layers_{};
     std::vector<Layer *> layer_stack_{};
     unsigned int latest_id_{0};

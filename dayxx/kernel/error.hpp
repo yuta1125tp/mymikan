@@ -34,6 +34,7 @@ public:
         kNoWaiter,
         kEndpointNotInCharge,
         kNoPCIMSI,
+        kUnknownPixelFormat,
         kLastOfCode, // この列挙子は常に最後に配置する
     };
 
@@ -61,6 +62,7 @@ private:
         "kNoWaiter",
         "kEndpointNotInCharge",
         "kNoPCIMSI",
+        "kUnknownPixelFormat",
     };
     static_assert(Error::Code::kLastOfCode == code_names_.size());
 
@@ -82,7 +84,7 @@ public:
 
     const char *Name() const
     {
-        return code_names_[static_cast<int>(code_)];
+        return code_names_[static_cast<int>(this->code_)];
     }
 
     const char *File() const
