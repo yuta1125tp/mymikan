@@ -78,7 +78,7 @@ public:
     Layer &NewLayer();
 
     /**
-     * @brief 現在表示状態にあるレイヤを描画する
+     * @brief 現在表示状態にあるレイヤをエリアを絞り描画する
      * 
      */
     void Draw(const Rectangle<int> &area) const;

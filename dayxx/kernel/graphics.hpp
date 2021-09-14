@@ -90,6 +90,7 @@ struct Rectangle
 
 /**
  * @brief intersection of two rectangles
+ * 2つの矩形が重ならない場合は面積0の矩形を返す。
  * 
  * @tparam T 
  * @tparam U 
@@ -105,6 +106,7 @@ Rectangle<T> operator&(const Rectangle<T> &lhs, const Rectangle<U> &rhs)
 
     if (lhs_end.x < rhs.pos.x || lhs_end.y < rhs.pos.y || rhs_end.x < lhs.pos.x || rhs_end.y < lhs.pos.y)
     {
+        // ２つの矩形が重ならない場合は面積0の矩形を返す。
         return {{0, 0}, {0, 0}};
     }
 

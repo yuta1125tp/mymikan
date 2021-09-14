@@ -54,7 +54,7 @@ void LayerManager::Draw(unsigned int id) const
 {
     bool draw = false;
     Rectangle<int> window_area;
-    // layer_stack_の画面奥側から順位調べて、再描画対象より手前の重複エリアを差描画する。
+    // layer_stack_の画面奥側から順に調べて、再描画対象より手前の重複エリアを差描画する。
     for (auto layer : layer_stack_)
     {
         if (layer->ID() == id)
