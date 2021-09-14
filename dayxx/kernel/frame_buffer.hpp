@@ -50,6 +50,7 @@ public:
     void Move(Vector2D<int> dst_pos, const Rectangle<int> &src);
 
     FrameBufferWriter &Writer() { return *writer_; }
+    const FrameBufferConfig &Config() const { return config_; };
 
 private:
     /** @brief 描画領域の縦横サイズピクセルのデータ形式など描画領域に関する構成情報を保持する */
