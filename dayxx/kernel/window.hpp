@@ -119,6 +119,14 @@ public:
      */
     int Height() const;
 
+    /**
+     * @brief このウインドウの平面描画領域内で矩形領域を移動する。
+     * 
+     * @param dst_pos 移動先の左上
+     * @param src 移動領域を示すRectangle
+     */
+    void Move(Vector2D<int> dst_pos, const Rectangle<int> &src);
+
 private:
     int width_, height_;
     std::vector<std::vector<PixelColor>> data_{};

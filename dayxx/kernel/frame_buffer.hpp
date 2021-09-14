@@ -34,11 +34,19 @@ public:
      * PixelWriter()で1ピクセルごとにデータ変換を繰り返すのではなく、バッファをmemcpyすることで描画するための中核[みかん本237]
      * バッファsrcの内容をthisの位置posへコピーする[みかん本9.14]
      * 
-     * @param pos
-     * @param src
+     * @param dst_pos コピー先の左上
+     * @param src コピー元のフレームバッファ
      * @return Error 
      */
-    Error Copy(Vector2D<int> pos, const FrameBuffer &src);
+    Error Copy(Vector2D<int> dst_pos, const FrameBuffer &src);
+
+    /**
+     * @brief フレームバッファ内の平面領域を移動
+     * 
+     * @param dst_pos 移動先の左上
+     * @param src 移動元の領域
+     */
+    void Move(Vector2D<int> dst_pos, const Rectangle<int> &src);
 
     FrameBufferWriter &Writer() { return *writer_; }
 
@@ -50,11 +58,3 @@ private:
     /** @brief この描画領域と関連付けたPixelWriterのインスタンス writer_が指すインスタンスの所有権はFrameBufferが持つ。*/
     std::unique_ptr<FrameBufferWriter> writer_{};
 };
-
-/**
- * @brief pixelあたりのビット数を返す。未知のフォーマットの場合は-1を返す
- * 
- * @param format 
- * @return int 
- */
-int BitsPerPixel(PixelFormat format);

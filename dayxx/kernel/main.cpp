@@ -385,7 +385,7 @@ extern "C" void KernelMainNewStack(
     auto bgwindow = std::make_shared<Window>(kFrameWidth, kFrameHeight, frame_buffer_config.pixel_format);
     auto bgwriter = bgwindow->Writer();
     DrawDesktop(*bgwriter);
-    console->SetWriter(bgwriter);
+    console->SetWindow(bgwindow);
 
     Log(kInfo, "prepare mouse_window\n");
     auto mouse_window = std::make_shared<Window>(kMouseCursorWidth, kMouseCursorHeight, frame_buffer_config.pixel_format);
