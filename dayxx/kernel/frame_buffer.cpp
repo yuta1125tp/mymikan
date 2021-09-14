@@ -2,23 +2,6 @@
 
 namespace
 {
-    // /**
-    //  * @brief pixelあたりのビット数を返す。未知のフォーマットの場合は-1を返す
-    //  *
-    //  * @param format
-    //  * @return int
-    //  */
-    // int BitsPerPixel(PixelFormat format)
-    // {
-    //     switch (format)
-    //     {
-    //     case kPixelRGBResv8BitPerColor:
-    //         return 32;
-    //     case kPixelBGRResv8BitPerColor:
-    //         return 32;
-    //     }
-    //     return -1;
-    // }
     /**
      * @brief pixelあたりのバイト数を返す。未知のフォーマットの場合は-1を返す
      * 
@@ -133,6 +116,7 @@ void FrameBuffer::Move(Vector2D<int> dst_pos, const Rectangle<int> &src)
     const auto bytes_per_pixel = BytesPerPixel(config_.pixel_format);
     const auto bytes_per_scan_line = BytesPerScanLine(config_);
 
+    // 1行ずつコピーするので上方向のスクロールと下方向のスクロールでコピー順序を切り替える。
     if (dst_pos.y < src.pos.y) // move up
     {
         uint8_t *dst_buf = FrameAddrAt(dst_pos, config_);
