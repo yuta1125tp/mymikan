@@ -20,20 +20,34 @@
 class Layer
 {
 public:
+    /**　@brief 指定したIDを持つレイヤインスタンスを生成する */
     Layer(unsigned int id = 0);
+    /**　@brief このインスタンスのIDを返す */
     unsigned int ID() const;
-    Layer &SetWindow(const std::shared_ptr<Window> &window);
-    std::shared_ptr<Window> GetWindow() const;
 
+    /**
+     * @brief ウインドウを設定する。既存のウインドウはこのレイヤーから外れる。
+     * 
+     * @param window 
+     * @return Layer& 
+     */
+    Layer &SetWindow(const std::shared_ptr<Window> &window);
+    /**　@brief 設定されたウインドウを返す */
+    std::shared_ptr<Window> GetWindow() const;
+    /**　@brief レイヤの原点座標を取得する */
+    Vector2D<int> GetPosition() const;
+
+    /**　@brief レイヤの位置情報を指定した絶対座標へ更新する。再描画はしない */
     Layer &Move(Vector2D<int> pos);
+    /**　@brief レイヤの位置情報を指定した相対座標へ更新する。再描画はしない */
     Layer &MoveRelative(Vector2D<int> pos_diff);
 
     /**
-     * @brief writerに現在設定されているウインドウの内容を描画する
+     * @brief writerに現在設定されているウインドウの内容のうち指定されたエリアの情報をscreenに描画する
      * 
      * @param writer 
      */
-    void DrawTo(FrameBuffer &screen) const;
+    void DrawTo(FrameBuffer &screen, const Rectangle<int> &area) const;
 
 private:
     unsigned int id_;
@@ -67,20 +81,26 @@ public:
      * @brief 現在表示状態にあるレイヤを描画する
      * 
      */
-    void Draw() const;
+    void Draw(const Rectangle<int> &area) const;
 
     /**
-     * @brief レイヤの位置情報を指定された絶対座標へと更新する。再描画はしない
+     * @brief 指定したIDのレイヤに設定されているウインドウの描画領域内を描画する
      * 
-     * @param id 
-     * @param new_position 
      */
-    void Move(unsigned int id, Vector2D<int> new_position);
+    void Draw(unsigned int id) const;
+
     /**
-     * @brief レイヤの位置情報を指定された相対座標へと更新する。再描画はしない
+     * @brief レイヤの位置情報を指定された絶対座標へと更新する。再描画する
      * 
      * @param id 
-     * @param new_position 
+     * @param new_pos 
+     */
+    void Move(unsigned int id, Vector2D<int> new_pos);
+    /**
+     * @brief レイヤの位置情報を指定された相対座標へと更新する。再描画する
+     * 
+     * @param id 
+     * @param pos_diff 
      */
     void MoveRelative(unsigned int id, Vector2D<int> pos_diff);
 

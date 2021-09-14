@@ -32,23 +32,32 @@ struct Vector2D
         y += rhs.y;
         return *this;
     }
+
+    template <typename U>
+    Vector2D<T> operator+(const Vector2D<U> &rhs) const
+    {
+        auto tmp = *this;
+        tmp += rhs;
+        return tmp;
+    }
+
+    template <typename U>
+    Vector2D<T> &operator-=(const Vector2D<U> &rhs)
+    {
+        x -= rhs.x;
+        y -= rhs.y;
+        return *this;
+    }
+
+    template <typename U>
+    Vector2D<T> operator-(const Vector2D<U> &rhs) const
+    {
+        auto tmp = *this;
+        tmp -= rhs;
+        return tmp;
+    }
 };
 
-/**
- * @brief Vector2D同士の加算
- * 
- * 宣言の中にアロー演算子がある理由。
- * c++11から導入されたdecltypeは戻り値の型を引数の型から推論する。
- * コンパイラは引数を見ないとdecltypeの引数の型を確認できないので、
- * 後ろ側に返り値の型情報を持ってくる宣言の書式が生まれた。らしい。
- * [arrow operator (->) in function heading](https://stackoverflow.com/a/22515589)
- * 
- * @tparam T 
- * @tparam U 
- * @param lhs 
- * @param rhs 
- * @return Vector2D<decltype(lhs.x + rhs.x)> 
- */
 template <typename T, typename U>
 auto operator+(const Vector2D<T> &lhs, const Vector2D<U> &rhs)
     -> Vector2D<decltype(lhs.x + rhs.x)>
@@ -78,6 +87,31 @@ struct Rectangle
 {
     Vector2D<T> pos, size;
 };
+
+/**
+ * @brief intersection of two rectangles
+ * 
+ * @tparam T 
+ * @tparam U 
+ * @param lhs 
+ * @param rhs 
+ * @return Rectangle<T> 
+ */
+template <typename T, typename U>
+Rectangle<T> operator&(const Rectangle<T> &lhs, const Rectangle<U> &rhs)
+{
+    const auto lhs_end = lhs.pos + lhs.size;
+    const auto rhs_end = rhs.pos + rhs.size;
+
+    if (lhs_end.x < rhs.pos.x || lhs_end.y < rhs.pos.y || rhs_end.x < lhs.pos.x || rhs_end.y < lhs.pos.y)
+    {
+        return {{0, 0}, {0, 0}};
+    }
+
+    auto new_pos = ElementMax(lhs.pos, rhs.pos);
+    auto new_size = ElementMin(lhs_end, rhs_end) - new_pos;
+    return {new_pos, new_size};
+}
 
 #pragma endregion
 

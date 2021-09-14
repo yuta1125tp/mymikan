@@ -12,6 +12,7 @@ Layer &Layer::SetWindow(const std::shared_ptr<Window> &window)
 }
 
 std::shared_ptr<Window> Layer::GetWindow() const { return window_; }
+Vector2D<int> Layer::GetPosition() const { return pos_; }
 
 Layer &Layer::Move(Vector2D<int> pos)
 {
@@ -24,11 +25,11 @@ Layer &Layer::MoveRelative(Vector2D<int> pos_diff)
     return *this;
 }
 
-void Layer::DrawTo(FrameBuffer &screen) const
+void Layer::DrawTo(FrameBuffer &screen, const Rectangle<int> &area) const
 {
     if (window_)
     {
-        window_->DrawTo(screen, pos_);
+        window_->DrawTo(screen, pos_, area);
     }
 }
 
@@ -41,23 +42,53 @@ Layer &LayerManager::NewLayer()
     return *layers_.emplace_back(new Layer{latest_id_});
 }
 
-void LayerManager::Draw() const
+void LayerManager::Draw(const Rectangle<int> &area) const
 {
     for (auto layer : layer_stack_)
     {
-        layer->DrawTo(*screen_);
+        layer->DrawTo(*screen_, area);
     }
 }
 
-void LayerManager::Move(unsigned int id, Vector2D<int> new_position)
+void LayerManager::Draw(unsigned int id) const
+{
+    bool draw = false;
+    Rectangle<int> window_area;
+    // layer_stack_の画面奥側から順位調べて、再描画対象より手前の重複エリアを差描画する。
+    for (auto layer : layer_stack_)
+    {
+        if (layer->ID() == id)
+        {
+            window_area.size = layer->GetWindow()->Size();
+            window_area.pos = layer->GetPosition();
+            draw = true;
+        }
+        if (draw)
+        {
+            layer->DrawTo(*screen_, window_area);
+        }
+    }
+}
+
+void LayerManager::Move(unsigned int id, Vector2D<int> new_pos)
 {
     // FindLayerはidが見つからないときにNullptrを返す。IDの有効性の確認は呼び出し側の責任 みかん本218p
-    FindLayer(id)->Move(new_position);
+    auto layer = FindLayer(id);
+    const auto window_size = layer->GetWindow()->Size();
+    const auto old_pos = layer->GetPosition();
+    layer->Move(new_pos);
+    Draw({old_pos, window_size});
+    Draw(id);
 }
 
 void LayerManager::MoveRelative(unsigned int id, Vector2D<int> pos_diff)
 {
-    FindLayer(id)->MoveRelative(pos_diff);
+    auto layer = FindLayer(id);
+    const auto window_size = layer->GetWindow()->Size();
+    const auto old_pos = layer->GetPosition();
+    layer->MoveRelative(pos_diff);
+    Draw({old_pos, window_size});
+    Draw(id);
 }
 
 void LayerManager::UpDown(unsigned int id, int new_height)

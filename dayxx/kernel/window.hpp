@@ -75,9 +75,10 @@ public:
      * @brief 与えられたFrameBufferにこのウインドウの領域を描画する
      * 
      * @param dst 描画先
-     * @param position 
+     * @param pos dstの左上を基準としたウインドウの位置
+     * @param area dstの左上を基準とした描画対象の範囲
      */
-    void DrawTo(FrameBuffer &dst, Vector2D<int> position);
+    void DrawTo(FrameBuffer &dst, Vector2D<int> pos, const Rectangle<int> &area);
     /**
      * @brief 透過色を設定する。
      * 
@@ -119,6 +120,12 @@ public:
      */
     int Height() const;
 
+    /**
+     * @brief 平面描画領域のサイズをピクセル単位で返す
+     * 
+     * @return Vector2D<int> 
+     */
+    Vector2D<int> Size() const;
     /**
      * @brief このウインドウの平面描画領域内で矩形領域を移動する。
      * 

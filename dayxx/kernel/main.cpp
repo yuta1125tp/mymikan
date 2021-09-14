@@ -99,7 +99,6 @@ void MouseObserver(
     mouse_position = ElementMax(newpos, {0, 0});
 
     layer_manager->Move(mouse_layer_id, mouse_position);
-    layer_manager->Draw();
 }
 #pragma endregion
 
@@ -377,7 +376,6 @@ extern "C" void KernelMainNewStack(
     auto bgwindow = std::make_shared<Window>(screen_size.x, screen_size.y, frame_buffer_config.pixel_format);
     auto bgwriter = bgwindow->Writer();
     DrawDesktop(*bgwriter);
-    console->SetWindow(bgwindow);
 
     Log(kInfo, "prepare mouse_window\n");
     auto mouse_window = std::make_shared<Window>(kMouseCursorWidth, kMouseCursorHeight, frame_buffer_config.pixel_format);
@@ -387,6 +385,9 @@ extern "C" void KernelMainNewStack(
 
     auto main_window = std::make_shared<Window>(160, 68, frame_buffer_config.pixel_format);
     DrawWindow(*main_window->Writer(), "Hello Window");
+
+    auto console_window = std::make_shared<Window>(Console::kColumns * 8, Console::kRows * 16, frame_buffer_config.pixel_format);
+    console->SetWindow(console_window);
 
     FrameBuffer screen;
     if (auto err = screen.Initialize(frame_buffer_config))
@@ -402,11 +403,13 @@ extern "C" void KernelMainNewStack(
     auto bglayer_id = layer_manager->NewLayer().SetWindow(bgwindow).Move({0, 0}).ID();
     mouse_layer_id = layer_manager->NewLayer().SetWindow(mouse_window).Move(mouse_position).ID();
     auto main_window_layer_id = layer_manager->NewLayer().SetWindow(main_window).Move({300, 100}).ID();
+    console->SetLayerID(layer_manager->NewLayer().SetWindow(console_window).Move({0, 0}).ID());
 
     layer_manager->UpDown(bglayer_id, 0);
-    layer_manager->UpDown(mouse_layer_id, 1);
-    layer_manager->UpDown(main_window_layer_id, 1);
-    layer_manager->Draw();
+    layer_manager->UpDown(console->LayerID(), 1);
+    layer_manager->UpDown(main_window_layer_id, 2);
+    layer_manager->UpDown(mouse_layer_id, 3);
+    layer_manager->Draw({{0, 0}, screen_size});
 
     char str[128];
     unsigned int count = 0;
@@ -416,12 +419,11 @@ extern "C" void KernelMainNewStack(
     // キューに溜まったイベントを処理し続ける
     while (1)
     {
-
         ++count;
         sprintf(str, "%010u", count);
         FillRectangle(*main_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
         WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
-        layer_manager->Draw();
+        layer_manager->Draw(main_window_layer_id);
 
         // cli(Clear Interrupt Flag)命令はCPUの割り込みフラグ（IF, Interrupt Flag）を0にする命令。
         // IFはCPU内のRFLAGSレジスタにあるフラグ。
