@@ -106,6 +106,8 @@ void MouseObserver(
 
     layer_manager->Move(mouse_layer_id, mouse_position);
 
+    // buttons引数はビットごとにマウスのボタンの押下状況を示す。
+    // bit0: 左ボタン、bit1: 右ボタン、bit2: 中央ボタン
     const bool previous_left_pressed = (previous_buttons & 0x01);
     const bool left_pressed = (buttons & 0x01);
 

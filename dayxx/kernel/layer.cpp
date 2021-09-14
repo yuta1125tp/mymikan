@@ -43,7 +43,7 @@ void LayerManager::SetWriter(FrameBuffer *screen)
 
 Layer &LayerManager::NewLayer()
 {
-    latest_id_++;
+    latest_id_++; // latest_idの初期値は0でそれから単調増加なのでnewされるLayerのidは必ず1以上
     // emplace_backは追加した要素の参照を返すが、std::unique_ptr<Layer>&は共有できないので、Layer&型に変換している
     return *layers_.emplace_back(new Layer{latest_id_});
 }

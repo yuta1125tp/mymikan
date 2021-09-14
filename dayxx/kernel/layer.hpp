@@ -22,7 +22,9 @@ class Layer
 public:
     /**　@brief 指定したIDを持つレイヤインスタンスを生成する */
     Layer(unsigned int id = 0);
-    /**　@brief このインスタンスのIDを返す */
+    /**　@brief このインスタンスのIDを返す
+     * IDは1以上の整数（みかん本263p）
+     */
     unsigned int ID() const;
 
     /**
