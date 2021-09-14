@@ -137,3 +137,5 @@ private:
     // 重ね合わせ処理の高速化のためのシャドウバッファ(VRAM)
     FrameBuffer shadow_buffer_{};
 };
+
+void DrawWindow(PixelWriter &writer, const char *title);
