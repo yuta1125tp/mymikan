@@ -148,3 +148,10 @@ private:
 };
 
 extern LayerManager *layer_manager;
+
+/**
+ * @brief Layer（Back Ground LayerとConsole Layer）とLayerManagerに関する初期化処理
+ * KernelMainNewStackから呼び出す。
+ * 
+ */
+void InitializeLayer();

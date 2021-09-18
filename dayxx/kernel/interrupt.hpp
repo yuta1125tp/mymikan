@@ -8,8 +8,10 @@
 
 #include <array>
 #include <cstdint>
+#include <deque>
 
 #include "x86_descriptor.hpp"
+#include "message.hpp"
 
 /**
  * @brief 割り込み記述子の属性[ref](みかん本の166p)
@@ -83,3 +85,5 @@ struct InterruptFrame
 };
 
 void NotifyEndOfInterrupt();
+
+void InitializeInterrupt(std::deque<Message> *msg_queue);

@@ -50,4 +50,9 @@ void SetDataSegment(
     uint32_t base,
     uint32_t limit);
 
+const uint16_t kKernelCS = 1 << 3; // Code Segmentレジスタ(CS)はgdt[1]を指す
+const uint16_t kKernelSS = 2 << 3; // Stack Segmentレジスタ(SS)はgdt[2]を指す
+const uint16_t kKernelDS = 0;      // Data Segmentレジスタ(DS)はgdt[0]を指す？
+
 void SetupSegments();
+void InitializeSegmentation();

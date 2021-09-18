@@ -63,3 +63,11 @@ void SetupSegments()
     LoadGDT(sizeof(gdt) - 1, reinterpret_cast<uintptr_t>(&gdt[0])); // 変数gdtを正式なGDTとしてCPUに登録する
     // これ以降はUEFIが作った古いGDTは見なくなる
 }
+
+void InitializeSegmentation()
+{
+    SetupSegments();
+
+    SetDSAll(0);
+    SetCSSS(kKernelCS, kKernelSS);
+}

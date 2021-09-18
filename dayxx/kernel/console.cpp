@@ -123,3 +123,22 @@ void Console::Refresh()
         WriteString(*writer_, Vector2D<int>{0, 16 * row}, buffer_[row], fg_color_);
     }
 }
+
+Console *console;
+
+namespace
+{
+    char console_buf[sizeof(Console)];
+}
+
+void InitializeConsole()
+{
+    // コンストラクタ呼び出しが波括弧なのは、C++11で追加された初期化構文
+    //（統一初期化記法、Uniform Initialization）によるものらしい。
+    // 同じ文脈で配列の初期化も波括弧でできる。
+    // [ref](https://faithandbrave.hateblo.jp/entry/20111221/1324394299)
+    console = new (console_buf) Console{
+        kDesktopFGColor,
+        kDesktopBGColor};
+    console->SetWriter(screen_writer);
+}

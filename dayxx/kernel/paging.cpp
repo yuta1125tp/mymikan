@@ -44,3 +44,8 @@ void SetupIdentityPageTable()
     SetCR3(reinterpret_cast<uint64_t>(&pml4_table[0]));
     // これ以降CPUは設定sチア新しい海藻ページング構造を使ってアドレス変換をする。（これ以前はUEFIが用意したものを利用している）
 }
+
+void InitializePaging()
+{
+    SetupIdentityPageTable();
+}

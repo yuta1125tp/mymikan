@@ -31,7 +31,7 @@ sudo make install
 ```bash
 # cコンパイラなど開発環境を読み込む
 source ${HOME}/osbook/devenv/buildenv.sh
-cd /home/yshira/Work/os/mymikanos/dayxx/kernel
+cd  ${HOME}/Work/os/mymikanos/dayxx/kernel
 make
 ```
 
@@ -40,7 +40,7 @@ make
 # 移動
 cd ${HOME}/edk2
 # シンボリックリンクを貼る
-ln -s /home/yshira/Work/os/mymikanos/dayxx/MikanLoaderPkg ./
+ln -s ${HOME}/Work/os/mymikanos/dayxx/MikanLoaderPkg ./
 # edk2に関する開発環境を読み込む
 source edksetup.sh
 # edk2のbuildコマンドでpythonが見つからない場合->特定のpythonを指定してやる。

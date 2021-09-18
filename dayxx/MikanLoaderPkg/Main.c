@@ -336,8 +336,7 @@ EFI_STATUS EFIAPI UefiMain(EFI_HANDLE image_handle,
 #pragma endregion gop
 
 #pragma region read_kernel
-    EFI_FILE_PROTOCOL *
-        kernel_file;
+    EFI_FILE_PROTOCOL *kernel_file;
     status = root_dir->Open(
         root_dir,
         &kernel_file,
