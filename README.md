@@ -31,7 +31,7 @@ sudo make install
 ```bash
 # cコンパイラなど開発環境を読み込む
 source ${HOME}/osbook/devenv/buildenv.sh
-cd  ${HOME}/Work/os/mymikanos/dayxx/kernel
+cd  ${HOME}/Work/os/mymikanos/src/kernel
 make
 ```
 
@@ -40,7 +40,7 @@ make
 # 移動
 cd ${HOME}/edk2
 # シンボリックリンクを貼る
-ln -s ${HOME}/Work/os/mymikanos/dayxx/MikanLoaderPkg ./
+ln -s ${HOME}/Work/os/mymikanos/src/MikanLoaderPkg ./
 # edk2に関する開発環境を読み込む
 source edksetup.sh
 # edk2のbuildコマンドでpythonが見つからない場合->特定のpythonを指定してやる。
@@ -48,8 +48,8 @@ PYTHON_COMMAND=python3 build
 
 # 予めWindows側でXlaunchを実行しておく。
 
-# ビルド結果を読み込んで動作確認（dayxxaの時点の引数）
-${HOME}/osbook/devenv/run_qemu.sh Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi ${HOME}/Work/os/mymikanos/dayxx/kernel/kernel.elf
+# ビルド結果を読み込んで動作確認
+${HOME}/osbook/devenv/run_qemu.sh Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi ${HOME}/Work/os/mymikanos/src/kernel/kernel.elf
 ```
 
 ## efiを指定してwslからqemuを起動
