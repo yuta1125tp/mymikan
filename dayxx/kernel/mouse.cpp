@@ -100,7 +100,7 @@ void Mouse::OnInterrupt(
             drag_layer_id_ = layer->ID();
         }
     }
-    else if (previous_left_pressed & left_pressed)
+    else if (previous_left_pressed && left_pressed)
     {
         if (drag_layer_id_ > 0)
         {

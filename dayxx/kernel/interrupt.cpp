@@ -44,6 +44,9 @@ namespace
 
 void InitializeInterrupt(std::deque<Message> *msg_queue)
 {
+    // 無名名前空間のmsg_queueにポインタをコピー
+    ::msg_queue = msg_queue;
+
     SetIDTEntry(
         idt[InterruptVector::kXHCI],
         MakeIDTAttr(DescriptorType::kInterruptGate, 0),

@@ -20,7 +20,6 @@
 #include "console.hpp"
 #include "pci.hpp"
 #include "logger.hpp"
-
 #include "usb/xhci/xhci.hpp"
 #include "interrupt.hpp"
 #include "asmfunc.h"
@@ -58,58 +57,19 @@ unsigned int main_window_layer_id;
 void InitializeMainWindow()
 {
     main_window = std::make_shared<Window>(160, 52, screen_config.pixel_format);
+
     DrawWindow(*main_window->Writer(), "Hello Window");
-    auto main_window_layer_id = layer_manager->NewLayer()
-                                    .SetWindow(main_window)
-                                    .SetDraggable(true)
-                                    .Move({300, 100})
-                                    .ID();
+
+    main_window_layer_id = layer_manager->NewLayer()
+                               .SetWindow(main_window)
+                               .SetDraggable(true)
+                               .Move({300, 100})
+                               .ID();
+
     layer_manager->UpDown(main_window_layer_id, std::numeric_limits<int>::max());
 }
 
-// メモリマネージャ関連
-char memory_manager_buf[sizeof(BitmapMemoryManager)];
-BitmapMemoryManager *memory_manager;
-
-#pragma region // マウスカーソル
-unsigned int mouse_layer_id;
-Vector2D<int> screen_size;
-Vector2D<int> mouse_position;
-
-#pragma endregion
-
-#pragma region SwitchEhci2Xhci
-
-void SwitchEhci2Xhci(const pci::Device &xhc_dev)
-{
-    bool intel_ehc_exist = false;
-    for (int i = 0; i < pci::num_device; ++i)
-    {
-        if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x20u) /* EHCI */ &&
-            0x8086 == pci::ReadVendorId(pci::devices[i]))
-        {
-            intel_ehc_exist = true;
-            break;
-        }
-    }
-    if (!intel_ehc_exist)
-    {
-        return;
-    }
-
-    uint32_t superspeed_ports = pci::ReadConfReg(xhc_dev, 0xdc); // USB3PRM
-    pci::WriteConfReg(xhc_dev, 0xd8, superspeed_ports);          // USB3_PSSEN
-    uint32_t ehci2xhci_ports = pci::ReadConfReg(xhc_dev, 0xd4);  // XUSB2PRM
-    pci::WriteConfReg(xhc_dev, 0xd0, ehci2xhci_ports);           // XUSB2PR
-    Log(kDebug, "SwitchEhci2Xhci: SS = %02x, xHCI = %02x\n",
-        superspeed_ports, ehci2xhci_ports);
-}
-
-#pragma endregion
-
-#pragma region 割り込み処理
 std::deque<Message> *main_queue;
-#pragma endregion
 
 // 新しいスタック領域（UEFI管理ではなく、OS管理の領域、[ref](みかん本の186p)）
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];

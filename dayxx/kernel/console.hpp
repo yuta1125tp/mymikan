@@ -10,6 +10,7 @@ class Console
 {
 public:
     static const int kRows = 25, kColumns = 80;
+
     Console(const PixelColor &fg_color, const PixelColor &bg_color);
     void PutString(const char *s);
     void SetWriter(PixelWriter *writer);

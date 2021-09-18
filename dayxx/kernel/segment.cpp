@@ -68,6 +68,6 @@ void InitializeSegmentation()
 {
     SetupSegments();
 
-    SetDSAll(0);
+    SetDSAll(kKernelDS);
     SetCSSS(kKernelCS, kKernelSS);
 }
