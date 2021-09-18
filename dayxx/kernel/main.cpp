@@ -29,6 +29,7 @@
 #include "window.hpp"
 #include "layer.hpp"
 #include "message.hpp"
+#include "timer.hpp"
 
 /**
  * @brief カーネル内部からメッセージを出す関数[ref](みかん本の132p)
@@ -105,6 +106,8 @@ extern "C" void KernelMainNewStack(
     InitializeMouse();
     layer_manager->Draw({{0, 0}, ScreenSize()});
 
+    InitializeLAPICTimer();
+
     char str[128];
     unsigned int count = 0;
 
@@ -144,6 +147,9 @@ extern "C" void KernelMainNewStack(
         {
         case Message::kInterruptXHCI:
             usb::xhci::ProcessEvents();
+            break;
+        case Message::kInterruptLAPICTimer:
+            printk("Timer interrupt\n");
             break;
         default:
             Log(kError, "Unknown message type: %d\n", msg.type);

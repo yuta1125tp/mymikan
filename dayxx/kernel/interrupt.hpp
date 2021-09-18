@@ -66,12 +66,18 @@ constexpr InterruptDescriptorAttribute MakeIDTAttr(
 
 void SetIDTEntry(InterruptDescriptor &desc, InterruptDescriptorAttribute attr, uint64_t offset, uint16_t segment_selector);
 
+/**
+ * @brief 割り込みベクタ番号
+ * 0x21以上0xff以下で重複しない値で定義する みかん本271p
+ * 
+ */
 class InterruptVector
 {
 public:
     enum Number
     {
         kXHCI = 0x40,
+        kLAPICTimer = 0x41,
     };
 };
 

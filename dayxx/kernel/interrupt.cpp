@@ -32,6 +32,7 @@ void NotifyEndOfInterrupt()
 
 namespace
 {
+    // メイン関数に割り込み発生を通知するためのキュー
     std::deque<Message> *msg_queue;
 
     __attribute__((interrupt)) void IntHandlerXHCI(InterruptFrame *frame)
@@ -40,17 +41,31 @@ namespace
         msg_queue->push_back(Message{Message::kInterruptXHCI});
         NotifyEndOfInterrupt();
     }
+
+    __attribute__((interrupt)) void IntHandlerLAPICTimer(InterruptFrame *frame)
+    {
+        msg_queue->push_back(Message{Message::kInterruptLAPICTimer});
+        NotifyEndOfInterrupt();
+    }
 }
 
 void InitializeInterrupt(std::deque<Message> *msg_queue)
 {
-    // 無名名前空間のmsg_queueにポインタをコピー
+    // 無名名前空間のmsg_queueにメイン関数で生成したキューのポインタをコピー
     ::msg_queue = msg_queue;
 
+    // idtentryの追加
     SetIDTEntry(
         idt[InterruptVector::kXHCI],
         MakeIDTAttr(DescriptorType::kInterruptGate, 0),
         reinterpret_cast<uint64_t>(IntHandlerXHCI),
         kKernelCS);
+    SetIDTEntry(
+        idt[InterruptVector::kLAPICTimer],
+        MakeIDTAttr(DescriptorType::kInterruptGate, 0),
+        reinterpret_cast<uint64_t>(IntHandlerLAPICTimer),
+        kKernelCS);
+
+    //
     LoadIDT(sizeof(idt) - 1, reinterpret_cast<uintptr_t>(&idt[0]));
 }

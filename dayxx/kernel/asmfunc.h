@@ -6,7 +6,15 @@ extern "C"
     void IoOut32(uint16_t addr, uint32_t data);
     uint32_t IoIn32(uint16_t addr);
     uint16_t GetCS(void);
+
+    /**
+     * @brief IDTのサイズと場所をCPUに登録する
+     * 
+     * @param limit 
+     * @param offset 
+     */
     void LoadIDT(uint16_t limit, uint64_t offset);
+
     /**
      * @brief GDTのサイズと場所をCPUに登録する
      * 
@@ -14,6 +22,7 @@ extern "C"
      * @param offset 
      */
     void LoadGDT(uint16_t limit, uint64_t offset);
+
     /**
      * @brief Code Segmentレジスタ(CS)とStack Segmentレジスタ(SS)に値を設定する
      * 
@@ -21,7 +30,9 @@ extern "C"
      * @param ss 
      */
     void SetCSSS(uint16_t cs, uint16_t ss);
+
     void SetDSAll(uint16_t value);
+
     /**
      * @brief 指定したPML4テーブルの物理アドレスをCR3レジスタに登録
      * 
