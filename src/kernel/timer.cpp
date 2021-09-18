@@ -21,9 +21,12 @@ namespace
 
 void InitializeLAPICTimer()
 {
+    timer_manager = new TimerManager;
+
     divide_config = 0b1011; // 1対1で分周する設定
     // lvt_timer = (0b001 << 16) | 32; // 16bitの位置に書き込んで割り込み不許可にする（みかん本227pと表9.3）
     lvt_timer = (0b010 << 16) | InterruptVector::kLAPICTimer; // 17bitの位置に書き込んで周期モード、16が0なので割り込み許可、0-7のbit（割り込みベクタ番号）にkLAPICTimerを登録 // みかん本271p
+    initial_count = 0x1000000u;
 }
 
 void StartLAPICTimer()
@@ -39,4 +42,16 @@ uint32_t LAPICTimerElapsed()
 void StopLAPICTimer()
 {
     initial_count = 0;
+}
+
+void TimerManager::Tick()
+{
+    ++tick_;
+}
+
+TimerManager *timer_manager;
+
+void LAPICTimerOnInterrupt()
+{
+    timer_manager->Tick();
 }

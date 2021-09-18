@@ -109,15 +109,17 @@ extern "C" void KernelMainNewStack(
     InitializeLAPICTimer();
 
     char str[128];
-    unsigned int count = 0;
 
     Log(kInfo, "start event loop.\n");
     // イベントループ
     // キューに溜まったイベントを処理し続ける
     while (1)
     {
-        ++count;
-        sprintf(str, "%010u", count);
+        __asm__("cli");
+        const auto tick = timer_manager->CurrentTick();
+        __asm__("sti");
+
+        sprintf(str, "%010lu", tick);
         FillRectangle(*main_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
         WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
         layer_manager->Draw(main_window_layer_id);
@@ -132,8 +134,8 @@ extern "C" void KernelMainNewStack(
             // FIを1にしたあとすぐにhltに入る。
             // sti命令と直後の1命令の間では割り込みが起きない仕様を利用するため、
             // インラインアセンブラで複数命令を並べて実行している。[ref](みかん本180p脚注)
-            // __asm__("sti\n\thlt");
-            __asm__("sti");
+            __asm__("sti\n\thlt");
+            // __asm__("sti");
             continue;
         }
 
