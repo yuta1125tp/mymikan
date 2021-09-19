@@ -18,6 +18,7 @@ OBJS=\
 	window.o layer.o \
 	timer.o \
 	frame_buffer.o \
+	acpi.o \
 	usb/memory.o usb/device.o usb/xhci/ring.o usb/xhci/trb.o usb/xhci/xhci.o \
 	usb/xhci/port.o usb/xhci/device.o usb/xhci/devmgr.o usb/xhci/registers.o \
 	usb/classdriver/base.o usb/classdriver/hid.o usb/classdriver/keyboard.o \

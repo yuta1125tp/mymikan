@@ -30,6 +30,7 @@
 #include "layer.hpp"
 #include "message.hpp"
 #include "timer.hpp"
+#include "acpi.hpp"
 
 /**
  * @brief カーネル内部からメッセージを出す関数[ref](みかん本の132p)
@@ -81,7 +82,8 @@ alignas(16) uint8_t kernel_main_stack[1024 * 1024];
  */
 extern "C" void KernelMainNewStack(
     const FrameBufferConfig &frame_buffer_config_ref,
-    const MemoryMap &memory_map_ref)
+    const MemoryMap &memory_map_ref,
+    const acpi::RSDP &acpi_table)
 {
     // UEFI管理のスタック領域の情報をOS管理の管理の新しいスタック領域へコピーする
     MemoryMap memory_map{memory_map_ref};
@@ -106,6 +108,7 @@ extern "C" void KernelMainNewStack(
     InitializeMouse();
     layer_manager->Draw({{0, 0}, ScreenSize()});
 
+    acpi::Initialize(acpi_table);
     InitializeLAPICTimer(*main_queue);
 
     timer_manager->AddTimer(Timer(200, 2));

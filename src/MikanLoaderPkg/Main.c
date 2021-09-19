@@ -450,13 +450,26 @@ EFI_STATUS EFIAPI UefiMain(EFI_HANDLE image_handle,
         Halt();
     }
 
+    // VendorGuidがACPIを表す要素を探す、それがRSDP構造体へのポインタ（みかん本283p、表11.2など）
+    // VendorGuid:  システム設定テーブルを識別するGUID
+    // VendorTable: システム設定テーブルへのポインタ
+    VOID *acpi_table = NULL;
+    for (UINTN i = 0; i < system_table->NumberOfTableEntries; i++)
+    {
+        if (CompareGuid(&gEfiAcpiTableGuid, &system_table->ConfigurationTable[i].VendorGuid))
+        {
+            acpi_table = system_table->ConfigurationTable[i].VendorTable;
+        }
+    }
+
     // 関数定義のメモリ上の位置情報だけでは、C言語の関数として呼ぶのに十分ではなく、さらに引数と戻り値の型情報（関数プロトタイプ）が必要[ref](みかん本79p)
     // 指定の引数を持つ関数を表す型EntryPointTypeを定義して、取得した関数の先頭アドレスをキャスト。
     typedef void EntryPointType(
         const struct FrameBufferConfig *,
-        const struct MemoryMap *);
+        const struct MemoryMap *,
+        const VOID *);
     EntryPointType *entry_point = (EntryPointType *)entry_addr; // 関数としてキャスト
-    entry_point(&config, &memmap);
+    entry_point(&config, &memmap, acpi_table);
 #pragma endregion call_kernal
 
     Print(L"All done\n");
