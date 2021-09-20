@@ -28,6 +28,11 @@ struct Message
         } timer;
         struct
         {
+            /**
+             * @brief 修飾キー（ShiftやCtrl）の状態を伝える変数
+             * 
+             */
+            uint8_t modifier;
             uint8_t keycode;
             char ascii;
         } keyboard;
