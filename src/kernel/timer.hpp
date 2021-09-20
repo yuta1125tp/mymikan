@@ -71,5 +71,9 @@ private:
 };
 
 extern TimerManager *timer_manager;
+/** @brief 1秒あたりのカウント数（TimerManager::Tick()の周波数）を記録するグローバル変数*/
+extern unsigned long lapic_timer_freq;
+/** @brief 1秒間にTimerManager::Tick()が呼ばれる頻度。秒間100回なら10[msec]に1回tick_が増える */
+const int kTimerFreq = 100;
 
 void LAPICTimerOnInterrupt();
