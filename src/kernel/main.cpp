@@ -89,6 +89,14 @@ void InitializeTextWindow()
 }
 
 int text_window_index;
+
+void DrawTextCursor(bool visible)
+{
+    const auto color = visible ? ToColor(0) : ToColor(0xffffff);
+    const auto pos = Vector2D<int>{8 + 8 * text_window_index, 24 + 5};
+    FillRectangle(*text_window->Writer(), pos, {7, 15}, color);
+}
+
 void InputTextWindow(char c)
 {
     if (c == 0)
@@ -105,14 +113,18 @@ void InputTextWindow(char c)
     if (c == '\b' & text_window_index > 0)
     {
         // \b:バックスペースで、１文字以上表示されている場合は最後の文字を消す（塗りつぶす）。
+        DrawTextCursor(false);
         --text_window_index;
         FillRectangle(*text_window->Writer(), pos(), {8, 16}, ToColor(0xffffff));
+        DrawTextCursor(true);
     }
     else if (c >= ' ' && text_window_index < max_chars)
     {
+        DrawTextCursor(false);
         // 空きがあるなら文字を表示
         WriteAscii(*text_window->Writer(), pos(), c, ToColor(0));
         ++text_window_index;
+        DrawTextCursor(true);
     }
 
     layer_manager->Draw(text_window_layer_id);
