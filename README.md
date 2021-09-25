@@ -57,6 +57,12 @@ ${HOME}/osbook/devenv/run_qemu.sh Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.
 ```bash
 ~/osbook/devenv/run_qemu.sh <Loader.efi>
 ```
+
+# C++
+## 波括弧による初期化
+いつでも波括弧で初期化すればよい、というわけではないらしい。  
+[C++11 Universal Initialization は、いつでも使うべきなのか](https://qiita.com/h2suzuki/items/d033679afde821d04af8)  
+
 # Makefile
 
 ## 自動変数
