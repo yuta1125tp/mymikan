@@ -173,6 +173,13 @@ extern "C" void KernelMainNewStack(
 
     InitializeKeyboard(*main_queue);
 
+    const int kTextboxCursorTimer = 1;
+    const int kTimer05sec = static_cast<int>(kTimerFreq * 0.5);
+    __asm__("cli");
+    timer_manager->AddTimer(Timer{kTimer05sec, kTextboxCursorTimer});
+    __asm__("sti");
+    bool textbox_cursor_visible = false;
+
     char str[128];
 
     Log(kInfo, "start event loop.\n");
@@ -216,6 +223,15 @@ extern "C" void KernelMainNewStack(
             usb::xhci::ProcessEvents();
             break;
         case Message::kTimerTimeout:
+            if (msg.arg.timer.value == kTextboxCursorTimer)
+            {
+                __asm__("cli");
+                timer_manager->AddTimer(Timer{msg.arg.timer.timeout + kTimer05sec, kTextboxCursorTimer});
+                __asm__("sti");
+                textbox_cursor_visible = !textbox_cursor_visible;
+                DrawTextCursor(textbox_cursor_visible);
+                layer_manager->Draw(text_window_layer_id);
+            }
             break;
         case Message::kKeyPush:
             InputTextWindow(msg.arg.keyboard.ascii);
