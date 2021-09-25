@@ -1,13 +1,30 @@
 #pragma once
 
 #include <algorithm>
-
+#include <cstdint>
 #include "frame_buffer_config.hpp"
 
 struct PixelColor
 {
     uint8_t r, g, b;
 };
+
+/**
+ * @brief 
+ * constexprは定数式を定義するためのキーワード
+ * 定数式はコンパイル時に評価される。
+ * ※constexprキーワードをつけた関数はヘッダに定義まで書く
+ * 
+ * @param c 
+ * @return constexpr PixelColor 
+ */
+constexpr PixelColor ToColor(uint32_t c)
+{
+    return {
+        static_cast<uint8_t>((c >> 16) & 0xff),
+        static_cast<uint8_t>((c >> 8) & 0xff),
+        static_cast<uint8_t>(c & 0xff)};
+}
 
 inline bool operator==(const PixelColor &lhs, const PixelColor &rhs)
 {
