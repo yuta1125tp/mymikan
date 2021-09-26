@@ -85,8 +85,10 @@ bool TimerManager::Tick()
 
         if (t.Value() == kTaskTimerValue)
         {
+            // Task切り替えのタイマがタイムアウトした場合
             task_timer_timeout = true;
             timers_.pop();
+            // タイマに再追加して周期タイマ化
             timers_.push(Timer{tick_ + kTaskTimerPeriod, kTaskTimerValue});
             continue;
         }
@@ -110,8 +112,11 @@ void LAPICTimerOnInterrupt()
 {
     const bool task_timer_timeout = timer_manager->Tick();
     NotifyEndOfInterrupt();
+
     if (task_timer_timeout)
     {
+        // SwitchTaskはNotifiEndOfInterrupt()後に実行する。
+        // 次のタイマ割り込みが発生しないため次回以降のタスク切換えが起こらなくなる...
         SwitchTask();
     }
 }

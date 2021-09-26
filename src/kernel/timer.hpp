@@ -57,7 +57,12 @@ public:
     TimerManager(std::deque<Message> &msg_queue);
     void AddTimer(const Timer &timer);
 
-    /** @brief 割り込み回数を数え上げる*/
+    /**
+     * @brief 割り込み回数を数え上げる
+     * 
+     * @return true : タスク切換えタイマのタイムアウトが発生した場合
+     * @return false : それ以外
+     */
     bool Tick();
     /** @brief 現在の累計割り込み回数を返す*/
     unsigned long CurrentTick() const { return tick_; }
