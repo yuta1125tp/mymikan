@@ -1,6 +1,7 @@
 #include "timer.hpp"
 #include "interrupt.hpp"
 #include "acpi.hpp"
+#include "task.hpp"
 
 namespace
 {
@@ -70,9 +71,10 @@ void TimerManager::AddTimer(const Timer &timer)
     timers_.push(timer);
 }
 
-void TimerManager::Tick()
+bool TimerManager::Tick()
 {
     ++tick_;
+    bool task_timer_timeout = false;
     while (true)
     {
         const auto &t = timers_.top();
@@ -80,6 +82,15 @@ void TimerManager::Tick()
         {
             break;
         }
+
+        if (t.Value() == kTaskTimerValue)
+        {
+            task_timer_timeout = true;
+            timers_.pop();
+            timers_.push(Timer{tick_ + kTaskTimerPeriod, kTaskTimerValue});
+            continue;
+        }
+
         // タイムアウトしている場合 - タイムアウト通知用のメッセージを生成してメイン関数に通知
         Message m{Message::kTimerTimeout};
         m.arg.timer.timeout = t.Timeout();
@@ -88,6 +99,8 @@ void TimerManager::Tick()
 
         timers_.pop();
     }
+
+    return task_timer_timeout;
 }
 
 TimerManager *timer_manager;
@@ -95,5 +108,10 @@ unsigned long lapic_timer_freq;
 
 void LAPICTimerOnInterrupt()
 {
-    timer_manager->Tick();
+    const bool task_timer_timeout = timer_manager->Tick();
+    NotifyEndOfInterrupt();
+    if (task_timer_timeout)
+    {
+        SwitchTask();
+    }
 }

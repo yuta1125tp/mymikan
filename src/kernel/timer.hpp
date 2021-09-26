@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <queue>
 #include <vector>
+#include <limits>
 #include "message.hpp"
 
 /**
@@ -57,7 +58,7 @@ public:
     void AddTimer(const Timer &timer);
 
     /** @brief 割り込み回数を数え上げる*/
-    void Tick();
+    bool Tick();
     /** @brief 現在の累計割り込み回数を返す*/
     unsigned long CurrentTick() const { return tick_; }
 
@@ -75,5 +76,8 @@ extern TimerManager *timer_manager;
 extern unsigned long lapic_timer_freq;
 /** @brief 1秒間にTimerManager::Tick()が呼ばれる頻度。秒間100回なら10[msec]に1回tick_が増える */
 const int kTimerFreq = 100;
+
+const int kTaskTimerPeriod = static_cast<int>(kTimerFreq * 0.02);
+const int kTaskTimerValue = std::numeric_limits<int>::min();
 
 void LAPICTimerOnInterrupt();
