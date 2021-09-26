@@ -39,4 +39,19 @@ extern "C"
      * @param value PML4テーブルの物理アドレス
      */
     void SetCR3(uint64_t value);
+
+    /**
+     * @brief 
+     * 
+     * @return uint64_t 
+     */
+    uint64_t GetCR3();
+
+    /**
+     * @brief 
+     * 
+     * @param next_ctx 
+     * @param current_ctx 
+     */
+    void SwitchContext(void *next_ctx, void *current_ctx);
 }

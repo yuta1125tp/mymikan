@@ -7,10 +7,12 @@
 #include <cstddef>
 #include <cstdio>
 
+#include <array>
 #include <numeric>
 #include <vector>
 #include <deque>
 #include <limits>
+#include <string.h> // for memset
 
 #include "frame_buffer_config.hpp"
 #include "memory_map.hpp"
@@ -130,6 +132,50 @@ void InputTextWindow(char c)
     layer_manager->Draw(text_window_layer_id);
 }
 
+std::shared_ptr<Window> task_b_window;
+unsigned int task_b_window_layer_id;
+void InitializeTaskBWindow()
+{
+    task_b_window = std::make_shared<Window>(160, 52, screen_config.pixel_format);
+    DrawWindow(*task_b_window->Writer(), "TaskB Window");
+
+    task_b_window_layer_id = layer_manager->NewLayer().SetWindow(task_b_window).SetDraggable(true).Move({100, 100}).ID();
+
+    layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
+}
+
+/**
+ * @brief タスクのコンテキストを保存するための構造体
+ * 
+ */
+struct TaskContext
+{
+    uint64_t cr3, rip, rflags, reserved1;            //offset 0x00
+    uint64_t cs, ss, fs, gs;                         //offset 0x20
+    uint64_t rax, rbx, rcx, rdx, rdi, rsi, rsp, rbp; //offset 0x40
+    uint64_t r8, r9, r10, r11, r12, r13, r14, r15;   //offset 0x80
+    std::array<uint8_t, 512> fxsave_area;            // offset 0xc0
+} __attribute__((packed));
+
+alignas(16) TaskContext task_b_ctx, task_a_ctx;
+
+void TaskB(int task_id, int data)
+{
+    printk("taskB: task_id=%d, data=%d\n", task_id, data);
+    char str[128];
+    int count = 0;
+    while (true)
+    {
+        ++count;
+        sprintf(str, "%010d", count);
+        FillRectangle(*task_b_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
+        WriteString(*task_b_window->Writer(), {24, 28}, str, {0, 0, 0});
+        layer_manager->Draw(task_b_window_layer_id);
+
+        SwitchContext(&task_a_ctx, &task_b_ctx);
+    }
+}
+
 std::deque<Message> *main_queue;
 
 // 新しいスタック領域（UEFI管理ではなく、OS管理の領域、[ref](みかん本の186p)）
@@ -165,6 +211,7 @@ extern "C" void KernelMainNewStack(
     InitializeLayer();
     InitializeMainWindow();
     InitializeTextWindow();
+    InitializeTaskBWindow();
     InitializeMouse();
     layer_manager->Draw({{0, 0}, ScreenSize()});
 
@@ -179,6 +226,24 @@ extern "C" void KernelMainNewStack(
     timer_manager->AddTimer(Timer{kTimer05sec, kTextboxCursorTimer});
     __asm__("sti");
     bool textbox_cursor_visible = false;
+
+    std::vector<uint64_t> task_b_stack(1024); //64[bit]*1024/8[bit/byte]=8192[byte]=8[kbyte]
+    uint64_t task_b_stack_end = reinterpret_cast<uint64_t>(&task_b_stack[1024]);
+
+    memset(&task_b_ctx, 0, sizeof(task_b_ctx));
+    task_b_ctx.rip = reinterpret_cast<uint64_t>(TaskB); // RIPにTaskBの先頭のアドレス
+    task_b_ctx.rdi = 1;                                 // TaskBの第1引数
+    task_b_ctx.rsi = 42;                                // TaskBの第2引数
+    task_b_ctx.cr3 = GetCR3();                          // CR3にはPML4テーブルのアドレスが設定されている。→タスクB実行中も同じPML4テーブルを参照することになる。
+    task_b_ctx.rflags = 0x202;                          // 割り込み許可のフラグみかん本315p
+    task_b_ctx.cs = kKernelCS;                          // メインタスクと同じCS
+    task_b_ctx.ss = kKernelSS;                          // 同じSS
+    // アドレス値の下位4ビットを切り捨てて16の倍数に調整し、8引いて下位4ビットを8にしている。
+    // 16バイトアライメントなのに、8引いている理由はcall命令後の状態に偽装するため。
+    // みかん本のコラム13.1
+    task_b_ctx.rsp = (task_b_stack_end & ~0xflu) - 8;
+    // MXCSRのすべての例外をマスクする みかん本315p
+    *reinterpret_cast<uint32_t *>(&task_b_ctx.fxsave_area[24]) = 0x1f80;
 
     char str[128];
 
@@ -206,8 +271,10 @@ extern "C" void KernelMainNewStack(
             // FIを1にしたあとすぐにhltに入る。
             // sti命令と直後の1命令の間では割り込みが起きない仕様を利用するため、
             // インラインアセンブラで複数命令を並べて実行している。[ref](みかん本180p脚注)
-            __asm__("sti\n\thlt");
+            // __asm__("sti\n\thlt");
             // __asm__("sti");
+            __asm__("sti");
+            SwitchContext(&task_b_ctx, &task_a_ctx);
             continue;
         }
 
