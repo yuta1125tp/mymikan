@@ -117,6 +117,6 @@ void LAPICTimerOnInterrupt()
     {
         // SwitchTaskはNotifiEndOfInterrupt()後に実行する。
         // 次のタイマ割り込みが発生しないため次回以降のタスク切換えが起こらなくなる...
-        SwitchTask();
+        task_manager->SwitchTask();
     }
 }

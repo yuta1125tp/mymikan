@@ -12,7 +12,6 @@
 #include <vector>
 #include <deque>
 #include <limits>
-#include <string.h> // for memset
 
 #include "frame_buffer_config.hpp"
 #include "memory_map.hpp"
@@ -145,9 +144,9 @@ void InitializeTaskBWindow()
     layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
 }
 
-void TaskB(int task_id, int data)
+void TaskB(uint64_t task_id, int64_t data)
 {
-    printk("taskB: task_id=%d, data=%d\n", task_id, data);
+    printk("taskB: task_id=%lu, data=%lu\n", task_id, data);
     char str[128];
     int count = 0;
     while (true)
@@ -157,6 +156,15 @@ void TaskB(int task_id, int data)
         FillRectangle(*task_b_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
         WriteString(*task_b_window->Writer(), {24, 28}, str, {0, 0, 0});
         layer_manager->Draw(task_b_window_layer_id);
+    }
+}
+
+void TaskIdle(uint64_t task_id, int64_t data)
+{
+    printk("TaskIdle: task_id=%lu, data=%lx\n", task_id, data);
+    while (true)
+    {
+        __asm__("hlt");
     }
 }
 
@@ -211,25 +219,10 @@ extern "C" void KernelMainNewStack(
     __asm__("sti");
     bool textbox_cursor_visible = false;
 
-    std::vector<uint64_t> task_b_stack(1024); //64[bit]*1024/8[bit/byte]=8192[byte]=8[kbyte]
-    uint64_t task_b_stack_end = reinterpret_cast<uint64_t>(&task_b_stack[1024]);
-
-    memset(&task_b_ctx, 0, sizeof(task_b_ctx));
-    task_b_ctx.rip = reinterpret_cast<uint64_t>(TaskB); // RIPにTaskBの先頭のアドレス
-    task_b_ctx.rdi = 1;                                 // TaskBの第1引数
-    task_b_ctx.rsi = 43;                                // TaskBの第2引数
-    task_b_ctx.cr3 = GetCR3();                          // CR3にはPML4テーブルのアドレスが設定されている。→タスクB実行中も同じPML4テーブルを参照することになる。
-    task_b_ctx.rflags = 0x202;                          // 割り込み許可のフラグみかん本315p
-    task_b_ctx.cs = kKernelCS;                          // メインタスクと同じCS
-    task_b_ctx.ss = kKernelSS;                          // 同じSS
-    // アドレス値の下位4ビットを切り捨てて16の倍数に調整し、8引いて下位4ビットを8にしている。
-    // 16バイトアライメントなのに、8引いている理由はcall命令後の状態に偽装するため。
-    // みかん本のコラム13.1
-    task_b_ctx.rsp = (task_b_stack_end & ~0xflu) - 8;
-    // MXCSRのすべての例外をマスクする みかん本315p
-    *reinterpret_cast<uint32_t *>(&task_b_ctx.fxsave_area[24]) = 0x1f80;
-
     InitializeTask();
+    task_manager->NewTask().InitContext(TaskB, 42);
+    task_manager->NewTask().InitContext(TaskIdle, 0xdeadbeef);
+    task_manager->NewTask().InitContext(TaskIdle, 0xcafebabe);
 
     char str[128];
 
