@@ -51,7 +51,14 @@ Task &Task::Wakeup()
     return *this;
 }
 
-TaskManager::TaskManager() { running_.push_back(&NewTask()); }
+TaskManager::TaskManager()
+{
+    // TaskManager初期化中に番兵役のタスクを初期化
+    // 番兵役のタスクはTaskManagerを呼び出したコンテキスト
+    // （メイン関数を実行しているコンテキスト）
+    // に対応するタスクになる
+    running_.push_back(&NewTask());
+}
 
 Task &TaskManager::NewTask()
 {
