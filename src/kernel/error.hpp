@@ -35,6 +35,7 @@ public:
         kEndpointNotInCharge,
         kNoPCIMSI,
         kUnknownPixelFormat,
+        kNoSuchTask,
         kLastOfCode, // この列挙子は常に最後に配置する
     };
 
@@ -63,7 +64,8 @@ private:
         "kEndpointNotInCharge",
         "kNoPCIMSI",
         "kUnknownPixelFormat",
-    };
+        "kNoSuchTask",
+    }; // こちらに番兵はいない
     static_assert(Error::Code::kLastOfCode == code_names_.size());
 
 public:
